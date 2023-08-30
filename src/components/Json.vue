@@ -53,6 +53,10 @@ const getFormatData = (str: string) => {
       str = utf8String(str)
       str = getJson(str)
     } catch (e) {
+      const paramJson = getParamJson(str)
+      if (paramJson != str && typeof paramJson === 'object' && JSON.stringify(paramJson) != '{}') {
+        str = jsonFormat(paramJson)
+      }
     }
   }
   return str;
@@ -167,12 +171,91 @@ const contentRefCopy = () => {
 // const contentRefCursorText = () => {
 //   return getContentRef(activeKey.value).value[0].cursorText()
 // }
+
 const getContentRef = (index: number): any => {
   if (!childElementRefs.value[index]) {
     // @ts-ignore
     childElementRefs.value[index] = ref();
   }
   return childElementRefs.value[index];
+}
+
+const contentRefCursorText = () => {
+  return getContentRef(activeKey.value).value[0].cursorText()
+}
+const getParamJson = (paramsString: string) => {
+  const paramObj: any = {};
+  const queryString = paramsString.replace(/^[^?]*\?/, '');
+  const paramsArr = queryString.split("&");
+
+  for (let i = 0; i < paramsArr.length; i++) {
+    const param = paramsArr[i].split("=");
+    const key = decodeURIComponent(param[0]);
+    const value = decodeURIComponent(param[1] || "");
+
+    const match = key.match(/(\w+)(?:\[([\d\w]*)\])?/);
+    if (!match) {
+      return paramsString
+    }
+
+    const currentKey = match[1];
+    const index = match[2] || "";
+
+    if (!paramObj[currentKey]) {
+      paramObj[currentKey] = {};
+    }
+
+    if (index === "") {
+      paramObj[currentKey] = value;
+    } else {
+      if (!Array.isArray(paramObj[currentKey])) {
+        paramObj[currentKey] = [];
+      }
+      paramObj[currentKey][index] = value;
+    }
+  }
+
+  return paramObj;
+}
+const getBase64Json = (str: string) => {
+  try {
+    return atob(str); // 尝试解码
+  } catch (e) {
+    throw e
+  }
+}
+const base64Cursor = () => {
+  const text = contentRefCursorText()
+  if (!text) {
+    return
+  }
+
+  let base64Text = text.substring(1, text.length - 1);
+  if (!base64Text) {
+    return
+  }
+  try {
+    const json = getBase64Json(base64Text)
+    try {
+      JSON.parse(json)
+    } catch (e) {
+      return
+    }
+
+    let content = getActive().content;
+    if (!content) {
+      return
+    }
+
+    const newContent = content.replace(text, json)
+    if (!newContent || newContent == content) {
+      return
+    }
+
+    setValue(newContent)
+  } catch (e) {
+
+  }
 }
 
 
@@ -398,8 +481,9 @@ const handleMenuClick = (clickInfo: any) => {
       <a-button @click="copy">复制</a-button>
       <a-button @click="archiveCopy">复制压缩</a-button>
       <!--      <a-button @click="escape">去除转义</a-button>-->
-      <!--      <a-button @click="escapeCursor">光标处去转义</a-button>-->
+<!--      <a-button @click="escapeCursor">光标处去转义</a-button>-->
       <!--      <a-button @click="showModal">历史</a-button>-->
+      <a-button @click="base64Cursor">光标处base64</a-button>
     </a-space>
 
     <div>

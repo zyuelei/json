@@ -111,6 +111,13 @@ const copy = () => {
   }
 
 }
+
+const getByteCount = (str: string) => {
+  const encoder = new TextEncoder();
+  const byteArray = encoder.encode(str);
+  return byteArray.length;
+}
+
 const cursorText = () => {
   const session = editor.value.getSession();
   const cursorPosition = editor.value.getCursorPosition();
@@ -122,6 +129,7 @@ const cursorText = () => {
   let startType = 'start'
   let startIndex = 0
   let endIndex = 0
+  let hasIndex = 0
   let result: any[] = []
   token.map((value: any, index: number) => {
     if (value.value && value.type == 'string' && startType == 'start') {
@@ -129,7 +137,8 @@ const cursorText = () => {
         startIndex = index
       }
     }
-    if (value.index || value.start) {
+    hasIndex += getByteCount(value.value)
+    if (cursorPosition.column < hasIndex) {
       startType = 'end'
     }
     if (value.value && value.type == 'string' && startType == 'end') {
@@ -139,7 +148,7 @@ const cursorText = () => {
       }
     }
   })
-  if (endIndex > startIndex) {
+  if (endIndex >= startIndex) {
     token.map((value: any, index: number) => {
       if (index >= startIndex && index <= endIndex) {
         result.push(value.value)
@@ -149,7 +158,6 @@ const cursorText = () => {
   let resultStr = ''
   if (result) {
     resultStr = result.join('')
-    resultStr = resultStr.substring(1, resultStr.length - 1);
   }
   return resultStr
 
