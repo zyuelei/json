@@ -1,17 +1,23 @@
 {
-  "name": "decode_itf8",
+  "name": "decode_json",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "ant-design-vue": "^4.0.1",
+    "bin-editor-next": "^1.1.0",
+    "brace": "^0.11.1",
+    "js-beautify": "^1.14.9",
+    "utf8": "^3.0.0",
     "vue": "^3.3.4"
   },
   "devDependencies": {
+    "@types/js-beautify": "^1.14.0",
+    "@types/utf8": "^3.0.1",
     "@vitejs/plugin-vue": "^4.2.3",
     "typescript": "^5.0.2",
     "vite": "^4.4.5",

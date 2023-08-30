@@ -1,0 +1,35 @@
+{
+  "main": "./index.html",
+  "logo": "logo.png",
+  "preload": "./preload.js",
+  "development": {
+    "main": "http://127.0.0.1:5173/index.html",
+    "preload": "/Users/zhangyuelei/dev/env/decode_utf8/dist/preload.js"
+  },
+  "features": [
+    {
+      "code": "utf8_to_json",
+      "explain": "utf8转json",
+      "cmds": [
+        {
+          "type": "regex",
+          "label": "utf8转义",
+          "match": "/^.*(?:\\\\x[a-f0-9]{2})+.*$/i"
+        }
+      ]
+    },
+    {
+      "code": "json_format",
+      "explain": "json格式化",
+      "cmds": [
+        "json",
+        "JSON",
+        {
+          "type": "regex",
+          "label": "json",
+          "match": "/^\\s*(\\{[\\s\\S]*\\}|\\[[\\s\\S]*\\])\\s*$/"
+        }
+      ]
+    }
+  ]
+}
