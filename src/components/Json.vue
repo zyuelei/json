@@ -96,8 +96,27 @@ const getEscapeJson = (json: any) => {
     return json;
   }
 
+  const parse = (value: any) => {
+    let result
+    if (typeof value === 'string') {
+      try {
+        const json = JSON.parse(value);
+        result = getEscapeJson(json)
+      } catch (e) {
+        result = value;
+      }
+    } else if (Array.isArray(value)) {
+      result = value.map((item) => getEscapeJson(item));
+    } else if (typeof value === 'object') {
+      result = getEscapeJson(value);
+    } else {
+      result = value;
+    }
+    return result
+  }
+
   if (Array.isArray(json)) {
-    json = json.map((item) => getEscapeJson(item));
+    json = json.map((item) => getEscapeJson(parse(item)));
     return json
   }
 
@@ -105,20 +124,7 @@ const getEscapeJson = (json: any) => {
   for (let key in json) {
     if (json.hasOwnProperty(key)) {
       const value = json[key];
-      if (typeof value === 'string') {
-        try {
-          const json = JSON.parse(value);
-          escapedJson[key] = getEscapeJson(json)
-        } catch (e) {
-          escapedJson[key] = value;
-        }
-      } else if (Array.isArray(value)) {
-        escapedJson[key] = value.map((item) => getEscapeJson(item));
-      } else if (typeof value === 'object') {
-        escapedJson[key] = getEscapeJson(value);
-      } else {
-        escapedJson[key] = value;
-      }
+      escapedJson[key] = parse(value)
     }
   }
 
@@ -481,7 +487,7 @@ const handleMenuClick = (clickInfo: any) => {
       <a-button @click="copy">复制</a-button>
       <a-button @click="archiveCopy">复制压缩</a-button>
       <!--      <a-button @click="escape">去除转义</a-button>-->
-<!--      <a-button @click="escapeCursor">光标处去转义</a-button>-->
+      <!--      <a-button @click="escapeCursor">光标处去转义</a-button>-->
       <!--      <a-button @click="showModal">历史</a-button>-->
       <a-button @click="base64Cursor">光标处base64</a-button>
     </a-space>
