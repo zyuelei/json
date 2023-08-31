@@ -123,9 +123,6 @@ const cursorText = () => {
   const cursorPosition = editor.value.getCursorPosition();
   const token = session.getTokens(cursorPosition.row);
 
-  var lineData = editor.value.session.getLine(cursorPosition.row);
-  console.info(lineData)
-  console.info(token)
   let startType = 'start'
   let startIndex = 0
   let endIndex = 0

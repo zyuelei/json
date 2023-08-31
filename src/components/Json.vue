@@ -100,8 +100,12 @@ const getEscapeJson = (json: any) => {
     let result
     if (typeof value === 'string') {
       try {
-        const json = JSON.parse(value);
-        result = getEscapeJson(json)
+        if (!isNaN(Number(value)) && !isNaN(parseFloat(value))) {
+          result = value
+        } else {
+          const json = JSON.parse(value);
+          result = getEscapeJson(json)
+        }
       } catch (e) {
         result = value;
       }
@@ -441,7 +445,7 @@ const handleMenuClick = (clickInfo: any) => {
 </script>
 
 <template>
-  <div class="container">
+  <div :class="`container ` + props.theme">
     <a-tabs class="tabs" v-model:activeKey="activeKey" type="editable-card" @edit="onEdit">
       <template #rightExtra>
         <a-button style="height: 100%" :disabled="activeKey == 0" @click="favorite">
@@ -525,7 +529,7 @@ const handleMenuClick = (clickInfo: any) => {
   height: 100%;
 }
 
-:deep(.ant-tabs-nav-more) {
+.dark :deep(.ant-tabs-nav-more) {
   color: rgba(255, 255, 255, 0.85);
 }
 </style>

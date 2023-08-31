@@ -3,8 +3,8 @@
   "logo": "logo.png",
   "preload": "./preload.js",
   "development": {
-    "main": "http://127.0.0.1:5173/index.html",
-    "preload": "/Users/zhangyuelei/dev/env/decode_utf8/dist/preload.js"
+    "main": "http://localhost:5173/",
+    "preload": "D:\\companies\\tools\\decode_utf8\\dist\\preload.js"
   },
   "features": [
     {
@@ -28,6 +28,17 @@
           "type": "regex",
           "label": "json",
           "match": "/^\\s*(\\{[\\s\\S]*\\}|\\[[\\s\\S]*\\])\\s*$/"
+        }
+      ]
+    },
+    {
+      "code": "get_url_to_json",
+      "explain": "url参数转json",
+      "cmds": [
+        {
+          "type": "regex",
+          "label": "url参数转json",
+          "match": "/^(?:[^\\s=&]{1,40}=[^\\s=&]*&)+[^\\s=&]{1,40}=[^\\s=&]*$/"
         }
       ]
     }
