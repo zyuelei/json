@@ -259,11 +259,6 @@ const base64Cursor = () => {
   }
 }
 
-const setConfig = () => {
-
-}
-
-
 const add = () => {
   const nowTime = new Date().getTime();
   activeKey.value = nowTime;
