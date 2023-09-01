@@ -3,7 +3,7 @@ import dayjs from 'dayjs'
 import CodeTemplate from "./CodeTemplate.vue";
 import utf8 from "utf8";
 import {config} from "../interface";
-import {DownOutlined, LockOutlined, UnlockOutlined} from '@ant-design/icons-vue';
+import {DownOutlined, LockOutlined, UnlockOutlined, SettingOutlined} from '@ant-design/icons-vue';
 import {unserialize} from 'serialize-php';
 
 const props = defineProps<{ theme: string }>()
@@ -16,11 +16,27 @@ const contentConfig = reactive<config>({
   theme: props.theme
 })
 // @ts-ignore
-window.onPluginEnter && window.onPluginEnter(({payload, type}: any) => {
-  // console.info('in', payload, type);
-  if (type == 'regex') {
-    activeKey.value = 0
-    setValue(payload);
+window.onPluginEnter && window.onPluginEnter(({payload, type, code}: any) => {
+  // console.info('in', payload, type, code);
+  switch (code) {
+    case "json_format":
+      if (type !== 'regex') {
+        contentRefSetFocus()
+        return
+      }
+      activeKey.value = 0
+      setValue(payload);
+      break;
+    case "get_url_to_json":
+      activeKey.value = 0
+      setValue(payload, {formatOrder: [supportAutoType.get_param]});
+      break;
+    case "utf8_to_json":
+    case "unicode_decode":
+    default:
+      activeKey.value = 0
+      setValue(payload);
+      break;
   }
   contentRefSetFocus()
 })
@@ -46,25 +62,47 @@ const saveActiveValue = (str: string) => {
 const favorite = () => {
   getActive().favorite = !getActive().favorite
 }
-const getFormatData = (str: string) => {
+const getFormatData = (str: string, formatParam?: formatParam) => {
+  const order = formatParam?.formatOrder ?? [supportAutoType.unicode, supportAutoType.utf8]
+  let result = str
+  let hasJson = false
   try {
-    str = getJson(str)
+    result = getJson(str)
+    hasJson = true
     console.info('f:json')
   } catch (e) {
-    try {
-      str = unicodeString(str)
-      str = utf8String(str)
-      str = getJson(str)
-      console.info('f:unicode utf8')
-    } catch (e) {
-      const paramJson = getParamJson(str)
-      if (paramJson != str && typeof paramJson === 'object' && JSON.stringify(paramJson) != '{}') {
-        str = jsonFormat(paramJson)
-        console.info('f:param')
-      }
+  }
+  try {
+    if (order.includes(supportAutoType.unicode as never)) {
+      result = unicodeString(result)
+      console.info('f:unicode')
+    }
+  } catch (e) {
+  }
+  try {
+    if (!hasJson && order.includes(supportAutoType.utf8 as never)) {
+      result = utf8String(result)
+      console.info('f:utf8')
+    }
+  } catch (e) {
+  }
+
+  try {
+    if (!hasJson && result != str) {
+      result = getJson(result)
+      hasJson = true
+    }
+  } catch (e) {
+  }
+  if (!hasJson && order.includes(supportAutoType.get_param as never)) {
+    const paramJson = getParamJson(str)
+    if (paramJson != str && typeof paramJson === 'object' && JSON.stringify(paramJson) != '{}') {
+      result = jsonFormat(paramJson)
+      hasJson = true
+      console.info('f:get_param')
     }
   }
-  return str;
+  return result;
 }
 // const utf8Verify = (str: string) => {
 //   const regex = /^.*(?:\\x[a-f0-9]{2})+.*$/
@@ -73,9 +111,20 @@ const getFormatData = (str: string) => {
 //   }
 //   return true
 // }
-const unicodeString = (str: string) => {
-  return eval("'" + str + "'")
+
+const unicodeString = (str: string): string => {
+  return str.replace(/\\u([\dA-Fa-f]{4})|\\x([0-9A-Fa-f]{2})/g, (match, grpU, grpX) => {
+    if (grpU) {
+      return String.fromCharCode(parseInt(grpU, 16));
+    }
+    if (grpX) {
+      return String.fromCharCode(parseInt(grpX, 16));
+    }
+    return match;
+  });
 }
+
+
 const utf8String = (str: string) => {
   try {
     str = utf8.decode(str);
@@ -161,10 +210,18 @@ const jsonArchive = (str: string) => {
 // const escapeString = (text: string) => {
 //   return text.replace(/\\\\/g, "\\").replace(/\\\"/g, '"')
 // }
+enum supportAutoType {
+  'get_param',
+  'utf8',
+  'unicode',
+}
 
-const setValue = (str?: string) => {
+type formatParam = {
+  formatOrder?: supportAutoType[]
+}
+const setValue = (str?: string, formatParam?: formatParam) => {
   str = str === undefined ? '' : str
-  str = getFormatData(str);
+  str = getFormatData(str, formatParam);
   saveActiveValue(str)
   contentRefSetVal(str)
 }
@@ -217,7 +274,7 @@ const getParamJson = (paramsString: string) => {
     paramObj[key] = value
   }
 
-  return paramObj;
+  return JSON.stringify(paramObj);
 }
 const getBase64Json = (str: string) => {
   try {
@@ -230,31 +287,87 @@ const getBase64Json = (str: string) => {
 function getContentCursorOrAll() {
   let parseText
   let oldText
+  let isCursor
   const text = contentRefCursorText()
   if (!text) {
     parseText = getActive().content
     oldText = parseText
+    isCursor = false
   } else {
     oldText = text
     parseText = text.substring(1, text.length - 1);
+    isCursor = true
   }
-  return {parseText, oldText};
+  return {parseText, oldText, isCursor};
 }
 
 const base64Decode = () => {
-  let {parseText, oldText} = getContentCursorOrAll();
+  let {parseText, oldText, isCursor} = getContentCursorOrAll();
 
   if (!parseText) {
+    contentRefSetFocus()
     return
   }
   try {
     const json = getBase64Json(parseText)
+    let isJson = false
     try {
       JSON.parse(json)
+      isJson = true
     } catch (e) {
+
+    }
+    if (json == parseText) {
+      contentRefSetFocus()
       return
     }
-    replaceNewContent(oldText, json);
+    if (isCursor && !isJson) {
+      replaceNewContent(parseText, json);
+    } else {
+      replaceNewContent(oldText, json);
+    }
+    contentRefSetFocus()
+  } catch (e) {
+  }
+}
+const getDecode = () => {
+  let {parseText, oldText} = getContentCursorOrAll();
+
+  if (!parseText) {
+    contentRefSetFocus()
+    return
+  }
+  try {
+    const paramJson = getParamJson(parseText)
+    if (paramJson == parseText) {
+      contentRefSetFocus()
+      return
+    }
+
+    replaceNewContent(oldText, paramJson);
+    contentRefSetFocus()
+  } catch (e) {
+  }
+}
+
+function getUrlDecodeString(parseText: string) {
+  try {
+    return decodeURIComponent(parseText);
+  } catch (e) {
+    throw e
+  }
+}
+
+const urlDecode = () => {
+  let {parseText, oldText} = getContentCursorOrAll();
+
+  if (!parseText) {
+    contentRefSetFocus()
+    return
+  }
+  try {
+    const urlDecode = getUrlDecodeString(parseText)
+    replaceNewContent(oldText, urlDecode);
     contentRefSetFocus()
   } catch (e) {
   }
@@ -274,14 +387,19 @@ function replaceNewContent(oldText?: string, json?: any) {
 const unserializeDecode = () => {
   let {parseText, oldText} = getContentCursorOrAll();
   if (!parseText) {
+    contentRefSetFocus()
     return
   }
   try {
     const json = unserialize(parseText)
+    if (json == parseText) {
+      contentRefSetFocus()
+      return
+    }
     replaceNewContent(oldText, json);
     contentRefSetFocus()
   } catch (e) {
-
+    contentRefSetFocus()
   }
 }
 
@@ -356,11 +474,12 @@ const windowCopy = (text: string) => {
 const format = () => {
   const text = contentRefCopy()
   setValue(text)
+  contentRefSetFocus()
 }
-const copy = () => {
-  const text = contentRefCopy()
-  windowCopy(text)
-}
+// const copy = () => {
+//   const text = contentRefCopy()
+//   windowCopy(text)
+// }
 const archiveCopy = () => {
   const text = contentRefCopy()
   try {
@@ -509,6 +628,20 @@ const handleConfigMenuClick = (clickInfo: any) => {
             <DownOutlined/>
           </a-button>
         </a-dropdown>
+
+        <a-dropdown placement="top">
+          <a-button style="height: 100%">
+            <SettingOutlined/>
+          </a-button>
+          <template #overlay>
+            <a-menu @click="handleConfigMenuClick">
+              <a-menu-item style="width: 80px" key="useWrap">
+                切换换行
+              </a-menu-item>
+            </a-menu>
+          </template>
+        </a-dropdown>
+
       </template>
       <a-tab-pane v-for="pane in panes" :key="pane.key" :tab="pane.title" :closable="pane.closable || !pane.favorite"
                   style="height: 100%;width: 100%;">
@@ -522,24 +655,16 @@ const handleConfigMenuClick = (clickInfo: any) => {
       <a-button @click="format">格式化</a-button>
       <a-button @click="pasteOnly">仅粘贴</a-button>
       <!--      <a-button @click="paste">粘贴</a-button>-->
-      <a-button @click="copy">复制</a-button>
+      <!--      <a-button @click="copy">复制</a-button>-->
       <a-button @click="archiveCopy">复制压缩</a-button>
       <!--      <a-button @click="escape">去除转义</a-button>-->
       <!--      <a-button @click="escapeCursor">光标处去转义</a-button>-->
       <!--      <a-button @click="showModal">历史</a-button>-->
-      <a-button @click="base64Decode">base64</a-button>
+      <a-button @click="getDecode">get</a-button>
+      <a-button @click="urlDecode">url_decode</a-button>
+      <a-button @click="base64Decode">base64_decode</a-button>
       <a-button @click="unserializeDecode">unserialize</a-button>
 
-      <a-dropdown placement="top">
-        <a-button>配置(暂未落盘)</a-button>
-        <template #overlay>
-          <a-menu @click="handleConfigMenuClick">
-            <a-menu-item key="useWrap">
-              切换换行
-            </a-menu-item>
-          </a-menu>
-        </template>
-      </a-dropdown>
 
     </a-space>
 
