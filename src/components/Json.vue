@@ -3,8 +3,9 @@ import dayjs from 'dayjs'
 import CodeTemplate from "./CodeTemplate.vue";
 import utf8 from "utf8";
 import {config} from "../interface";
-import {DownOutlined, LockOutlined, UnlockOutlined, SettingOutlined} from '@ant-design/icons-vue';
+import {DownOutlined, LockOutlined, SettingOutlined, UnlockOutlined} from '@ant-design/icons-vue';
 import {unserialize} from 'serialize-php';
+import {message} from 'ant-design-vue';
 
 const props = defineProps<{ theme: string }>()
 const childElementRefs = ref([]);
@@ -259,23 +260,57 @@ const getContentRef = (index: number): any => {
 const contentRefCursorText = () => {
   return getContentRef(activeKey.value).value[0].cursorText()
 }
+// const getParamJson = (paramsString: string) => {
+//   const paramObj: any = {};
+//   const queryString = paramsString.replace(/^[^?]*\?/, '');
+//   const paramsArr = queryString.split("&");
+//
+//   for (let i = 0; i < paramsArr.length; i++) {
+//     const param = paramsArr[i].split("=");
+//     debugger
+//     const key = decodeURIComponent(param[0]);
+//     const value = decodeURIComponent(param[1] || "");
+//     if (!value && paramsArr.length == 1) {
+//       return paramsString
+//     }
+//     paramObj[key] = value
+//   }
+//
+//   return JSON.stringify(paramObj);
+// }
+
 const getParamJson = (paramsString: string) => {
   const paramObj: any = {};
   const queryString = paramsString.replace(/^[^?]*\?/, '');
-  const paramsArr = queryString.split("&");
 
-  for (let i = 0; i < paramsArr.length; i++) {
-    const param = paramsArr[i].split("=", 2);
-    const key = decodeURIComponent(param[0]);
-    const value = decodeURIComponent(param[1] || "");
-    if (!value && paramsArr.length == 1) {
-      return paramsString
+  let startIndex = 0;
+  let endIndex = 0;
+  while (startIndex < queryString.length) {
+    // 搜索等号位置
+    const equalIndex = queryString.indexOf("=", startIndex);
+    if (equalIndex === -1) {
+      break;
     }
-    paramObj[key] = value
+    // 搜索下一个键值对的等号位置
+    endIndex = queryString.indexOf("&", equalIndex);
+    if (endIndex === -1) {
+      endIndex = queryString.length;
+    }
+    // 取出键和值，并解码
+    const key = decodeURIComponent(queryString.slice(startIndex, equalIndex));
+    // 将键值对存储到 paramObj
+    paramObj[key] = decodeURIComponent(queryString.slice(equalIndex + 1, endIndex));
+    // 更新下一个的开始位置
+    startIndex = endIndex + 1;
+  }
+
+  if (Object.keys(paramObj).length === 0) {
+    return paramsString;
   }
 
   return JSON.stringify(paramObj);
 }
+
 const getBase64Json = (str: string) => {
   try {
     return atob(str); // 尝试解码
@@ -332,7 +367,6 @@ const base64Decode = () => {
 }
 const getDecode = () => {
   let {parseText, oldText} = getContentCursorOrAll();
-
   if (!parseText) {
     contentRefSetFocus()
     return
@@ -487,6 +521,63 @@ const archiveCopy = () => {
     windowCopy(archiveText)
   } catch (e) {
   }
+}
+const formDataCopy = () => {
+  const text = contentRefCopy()
+  try {
+    const archiveText = getFormDataString(text)
+    windowCopy(archiveText)
+  } catch (e) {
+    message.error('转码失败');
+  }
+}
+
+function resolveObject(name: string, object: any) {
+  let stringToReturn = '';
+  for (const [key, value] of Object.entries(object)) {
+    if (value instanceof Object) {
+      stringToReturn += resolveObject(`${name}[${key}]`, value);
+      continue;
+    }
+    if (value instanceof Array) {
+      stringToReturn += resolveArray(`${name}[${key}]`, value);
+      continue;
+    }
+    stringToReturn += `${name}[${key}]:${value}\n`
+  }
+  return stringToReturn;
+}
+
+function resolveArray(name: string, array: any[]) {
+  let stringToReturn = '';
+  array.forEach((value, index) => {
+    if (value instanceof Object) {
+      stringToReturn += resolveObject(`${name}[${index}]`, value);
+      return;
+    }
+    if (value instanceof Array) {
+      stringToReturn += resolveArray(`${name}[${index}]`, value);
+      return;
+    }
+    stringToReturn += `${name}[${index}]:${value}\n`
+  })
+  return stringToReturn;
+}
+
+const getFormDataString = (jsonValues: string) => {
+  const jsonObject = JSON.parse(jsonValues);
+  let formDataString = '';
+  for (const [key, value] of Object.entries(jsonObject)) {
+    if (value instanceof Object) {
+      formDataString += resolveObject(key, value);
+      continue;
+    }
+    if (value instanceof Array) {
+      formDataString += resolveArray(key, value);
+    }
+    formDataString += `${key}:${value}\n`
+  }
+  return formDataString
 }
 // const paste = () => {
 //   // @ts-ignore
@@ -657,10 +748,11 @@ const handleConfigMenuClick = (clickInfo: any) => {
       <!--      <a-button @click="paste">粘贴</a-button>-->
       <!--      <a-button @click="copy">复制</a-button>-->
       <a-button @click="archiveCopy">复制压缩</a-button>
+      <a-button @click="formDataCopy">复制form</a-button>
       <!--      <a-button @click="escape">去除转义</a-button>-->
       <!--      <a-button @click="escapeCursor">光标处去转义</a-button>-->
       <!--      <a-button @click="showModal">历史</a-button>-->
-      <a-button @click="getDecode">get</a-button>
+      <a-button @click="getDecode">get参数</a-button>
       <a-button @click="urlDecode">url_decode</a-button>
       <a-button @click="base64Decode">base64_decode</a-button>
       <a-button @click="unserializeDecode">unserialize</a-button>
