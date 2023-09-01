@@ -41,6 +41,17 @@
           "match": "/^(?:[^\\s=&]{1,40}=[^\\s=&]*&)+[^\\s=&]{1,40}=[^\\s=&]*$/"
         }
       ]
+    },
+    {
+      "code": "unserialize_format",
+      "explain": "serialize转json",
+      "cmds": [
+        {
+          "type": "regex",
+          "label": "serialize转json",
+          "match": "/^a:\\d+:{(?:.*;)+}$/"
+        }
+      ]
     }
   ]
 }

@@ -32,6 +32,10 @@ window.onPluginEnter && window.onPluginEnter(({payload, type, code}: any) => {
       activeKey.value = 0
       setValue(payload, {formatOrder: [supportAutoType.get_param]});
       break;
+    case "unserialize_format":
+      activeKey.value = 0
+      setValue(payload, {formatOrder: [supportAutoType.unserialize]});
+      break;
     case "utf8_to_json":
     case "unicode_decode":
     default:
@@ -101,6 +105,14 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
       result = jsonFormat(paramJson)
       hasJson = true
       console.info('f:get_param')
+    }
+  }
+  if (!hasJson && order.includes(supportAutoType.unserialize as never)) {
+    const paramJson = getUnSerializeJson(str)
+    if (paramJson != str && typeof paramJson === 'object' && JSON.stringify(paramJson) != '{}') {
+      result = jsonFormat(paramJson)
+      hasJson = true
+      console.info('f:unserialize')
     }
   }
   return result;
@@ -215,6 +227,7 @@ enum supportAutoType {
   'get_param',
   'utf8',
   'unicode',
+  'unserialize'
 }
 
 type formatParam = {
@@ -418,6 +431,13 @@ function replaceNewContent(oldText?: string, json?: any) {
   setValue(newContent)
 }
 
+const getUnSerializeJson = (parseText: string) => {
+  try {
+    return unserialize(parseText)
+  } catch (e) {
+    throw e
+  }
+}
 const unserializeDecode = () => {
   let {parseText, oldText} = getContentCursorOrAll();
   if (!parseText) {
@@ -425,7 +445,7 @@ const unserializeDecode = () => {
     return
   }
   try {
-    const json = unserialize(parseText)
+    const json = getUnSerializeJson(parseText)
     if (json == parseText) {
       contentRefSetFocus()
       return
