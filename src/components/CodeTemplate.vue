@@ -124,8 +124,8 @@ const cursorText = () => {
   const token = session.getTokens(cursorPosition.row);
 
   let startType = 'start'
-  let startIndex = 0
-  let endIndex = 0
+  let startIndex = -1
+  let endIndex = -1
   let hasIndex = 0
   let result: any[] = []
   token.map((value: any, index: number) => {
@@ -145,7 +145,7 @@ const cursorText = () => {
       }
     }
   })
-  if (endIndex >= startIndex) {
+  if (endIndex >= startIndex && endIndex > -1) {
     token.map((value: any, index: number) => {
       if (index >= startIndex && index <= endIndex) {
         result.push(value.value)

@@ -4,6 +4,7 @@ import CodeTemplate from "./CodeTemplate.vue";
 import utf8 from "utf8";
 import {config} from "../interface";
 import {DownOutlined, LockOutlined, UnlockOutlined} from '@ant-design/icons-vue';
+import {unserialize} from 'serialize-php';
 
 const props = defineProps<{ theme: string }>()
 const childElementRefs = ref([]);
@@ -225,35 +226,62 @@ const getBase64Json = (str: string) => {
     throw e
   }
 }
-const base64Cursor = () => {
+
+function getContentCursorOrAll() {
+  let parseText
+  let oldText
   const text = contentRefCursorText()
   if (!text) {
-    return
+    parseText = getActive().content
+    oldText = parseText
+  } else {
+    oldText = text
+    parseText = text.substring(1, text.length - 1);
   }
+  return {parseText, oldText};
+}
 
-  let base64Text = text.substring(1, text.length - 1);
-  if (!base64Text) {
+const base64Decode = () => {
+  let {parseText, oldText} = getContentCursorOrAll();
+
+  if (!parseText) {
     return
   }
   try {
-    const json = getBase64Json(base64Text)
+    const json = getBase64Json(parseText)
     try {
       JSON.parse(json)
     } catch (e) {
       return
     }
+    replaceNewContent(oldText, json);
+    contentRefSetFocus()
+  } catch (e) {
+  }
+}
 
-    let content = getActive().content;
-    if (!content) {
-      return
-    }
+unserialize('a:1:{s:5:"phone";s:11:"15107551800";}', {})
 
-    const newContent = content.replace(text, json)
-    if (!newContent || newContent == content) {
-      return
-    }
+function replaceNewContent(oldText?: string, json?: any) {
+  let content = getActive().content;
+  if (!content) {
+  }
+  json = typeof json == 'object' ? JSON.stringify(json) : json
+  const newContent = content.replace(oldText, json || '')
+  if (!newContent || newContent == content) {
+  }
+  setValue(newContent)
+}
 
-    setValue(newContent)
+const unserializeDecode = () => {
+  let {parseText, oldText} = getContentCursorOrAll();
+  if (!parseText) {
+    return
+  }
+  try {
+    const json = unserialize(parseText, {})
+    replaceNewContent(oldText, json);
+    contentRefSetFocus()
   } catch (e) {
 
   }
@@ -443,7 +471,7 @@ const handleTabMenuClick = (clickInfo: any) => {
 }
 
 const handleConfigMenuClick = (clickInfo: any) => {
-  switch (clickInfo.key){
+  switch (clickInfo.key) {
     case "useWrap":
       contentConfig.useWrap = !contentConfig.useWrap;
       break;
@@ -501,8 +529,8 @@ const handleConfigMenuClick = (clickInfo: any) => {
       <!--      <a-button @click="escape">去除转义</a-button>-->
       <!--      <a-button @click="escapeCursor">光标处去转义</a-button>-->
       <!--      <a-button @click="showModal">历史</a-button>-->
-      <a-button @click="base64Cursor">光标处base64</a-button>
-
+      <a-button @click="base64Decode">base64</a-button>
+      <a-button @click="unserializeDecode">unserialize</a-button>
 
       <a-dropdown placement="top">
         <a-button>配置(暂未落盘)</a-button>
