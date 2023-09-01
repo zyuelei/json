@@ -38,7 +38,7 @@ const showEdit = (editorDiv: any) => {
       emit('onChange', {content: content, format: true});
     }, 5)
   })
-  editor.value.on('change', function () {
+  editor.value.on('change', function (i,v) {
     let content = editor.value.getValue()
     emit('onChange', {content, format: false});
   })
@@ -159,10 +159,14 @@ const cursorText = () => {
   return resultStr
 
 }
+
+const insert = (text: string) => {
+  editor.value.insert(text)
+}
 onMounted(() => {
   showEdit(editorDiv.value)
 });
-defineExpose({setVal, focus, copy, cursorText})
+defineExpose({setVal, focus, copy, insert, cursorText})
 </script>
 
 <template>

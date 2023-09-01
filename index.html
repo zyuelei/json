@@ -9,5 +9,25 @@
 <body>
 <div id="app"></div>
 <script type="module" src="/src/main.ts"></script>
+<script>
+    function loadScript(url, callback) {
+        var script = document.createElement('script');
+        script.src = url;
+
+        // 当脚本加载完成后执行回调函数
+        script.onload = callback;
+
+        document.body.appendChild(script);
+    }
+
+    if (typeof utools === 'undefined') {
+        var scriptUrl = '/public/preload.js';
+        loadScript(scriptUrl, function () {
+            // 在脚本加载完成后执行的回调函数
+            console.log('Script loaded.');
+        });
+
+    }
+</script>
 </body>
 </html>

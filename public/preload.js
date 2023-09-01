@@ -2,7 +2,13 @@ window.copyContent = (text) => {
     toolsFun(() => {
         utools.copyText(text)
     }, () => {
-
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text)
+                .then(function () {
+                })
+                .catch(function (error) {
+                });
+        }
     })
 }
 window.getClipboardContent = (callback, errCallback) => {

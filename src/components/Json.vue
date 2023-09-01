@@ -47,15 +47,18 @@ const favorite = () => {
 const getFormatData = (str: string) => {
   try {
     str = getJson(str)
+    console.info('f:json')
   } catch (e) {
     try {
       str = unicodeString(str)
       str = utf8String(str)
       str = getJson(str)
+      console.info('f:unicode utf8')
     } catch (e) {
       const paramJson = getParamJson(str)
       if (paramJson != str && typeof paramJson === 'object' && JSON.stringify(paramJson) != '{}') {
         str = jsonFormat(paramJson)
+        console.info('f:param')
       }
     }
   }
@@ -157,7 +160,7 @@ const jsonArchive = (str: string) => {
 //   return text.replace(/\\\\/g, "\\").replace(/\\\"/g, '"')
 // }
 
-const setValue = (str?: string) => {
+const setValue = (str?: string, format?: boolean) => {
   str = str === undefined ? '' : str
   str = getFormatData(str);
   saveActiveValue(str)
@@ -176,6 +179,10 @@ const contentRefSetFocus = () => {
 }
 const contentRefCopy = () => {
   return getContentRef(activeKey.value).value[0].copy()
+}
+
+const contentRefInsert = (text: string) => {
+  return getContentRef(activeKey.value).value[0].insert(text)
 }
 
 // const contentRefCursorText = () => {
@@ -199,30 +206,11 @@ const getParamJson = (paramsString: string) => {
   const paramsArr = queryString.split("&");
 
   for (let i = 0; i < paramsArr.length; i++) {
-    const param = paramsArr[i].split("=");
+    const param = paramsArr[i].split("=", 2);
     const key = decodeURIComponent(param[0]);
     const value = decodeURIComponent(param[1] || "");
 
-    const match = key.match(/(\w+)(?:\[([\d\w]*)\])?/);
-    if (!match) {
-      return paramsString
-    }
-
-    const currentKey = match[1];
-    const index = match[2] || "";
-
-    if (!paramObj[currentKey]) {
-      paramObj[currentKey] = {};
-    }
-
-    if (index === "") {
-      paramObj[currentKey] = value;
-    } else {
-      if (!Array.isArray(paramObj[currentKey])) {
-        paramObj[currentKey] = [];
-      }
-      paramObj[currentKey][index] = value;
-    }
+    paramObj[key] = value
   }
 
   return paramObj;
@@ -266,6 +254,10 @@ const base64Cursor = () => {
   } catch (e) {
 
   }
+}
+
+const setConfig = () => {
+
 }
 
 
@@ -353,10 +345,19 @@ const archiveCopy = () => {
   } catch (e) {
   }
 }
-const paste = () => {
+// const paste = () => {
+//   // @ts-ignore
+//   window.getClipboardContent && window.getClipboardContent((text: string) => {
+//     setValue(text)
+//   }, () => {
+//   })
+// }
+
+const pasteOnly = () => {
   // @ts-ignore
   window.getClipboardContent && window.getClipboardContent((text: string) => {
-    setValue(text)
+    contentRefInsert(text)
+    contentRefSetFocus()
   }, () => {
   })
 }
@@ -487,13 +488,15 @@ const handleMenuClick = (clickInfo: any) => {
 
     <a-space wrap style="justify-content: end;margin: 2px;">
       <a-button @click="format">格式化</a-button>
-      <a-button @click="paste">粘贴</a-button>
+      <a-button @click="pasteOnly">仅粘贴</a-button>
+      <!--      <a-button @click="paste">粘贴</a-button>-->
       <a-button @click="copy">复制</a-button>
       <a-button @click="archiveCopy">复制压缩</a-button>
       <!--      <a-button @click="escape">去除转义</a-button>-->
       <!--      <a-button @click="escapeCursor">光标处去转义</a-button>-->
       <!--      <a-button @click="showModal">历史</a-button>-->
       <a-button @click="base64Cursor">光标处base64</a-button>
+      <a-button @click="setConfig">配置(暂未落盘)</a-button>
     </a-space>
 
     <div>
