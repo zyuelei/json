@@ -260,8 +260,6 @@ const base64Decode = () => {
   }
 }
 
-unserialize('a:1:{s:5:"phone";s:11:"15107551800";}', {})
-
 function replaceNewContent(oldText?: string, json?: any) {
   let content = getActive().content;
   if (!content) {
@@ -279,7 +277,7 @@ const unserializeDecode = () => {
     return
   }
   try {
-    const json = unserialize(parseText, {})
+    const json = unserialize(parseText)
     replaceNewContent(oldText, json);
     contentRefSetFocus()
   } catch (e) {
