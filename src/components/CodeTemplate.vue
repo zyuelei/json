@@ -38,7 +38,7 @@ const showEdit = (editorDiv: any) => {
       emit('onChange', {content: content, format: true});
     }, 5)
   })
-  editor.value.on('change', function (i,v) {
+  editor.value.on('change', function () {
     let content = editor.value.getValue()
     emit('onChange', {content, format: false});
   })

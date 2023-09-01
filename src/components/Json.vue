@@ -11,6 +11,7 @@ const childElementRefs = ref([]);
 const contentConfig = reactive<config>({
   fontSize: '14px',
   printMargin: false,
+  useWrap: false,
   theme: props.theme
 })
 // @ts-ignore
@@ -160,7 +161,7 @@ const jsonArchive = (str: string) => {
 //   return text.replace(/\\\\/g, "\\").replace(/\\\"/g, '"')
 // }
 
-const setValue = (str?: string, format?: boolean) => {
+const setValue = (str?: string) => {
   str = str === undefined ? '' : str
   str = getFormatData(str);
   saveActiveValue(str)
@@ -209,7 +210,9 @@ const getParamJson = (paramsString: string) => {
     const param = paramsArr[i].split("=", 2);
     const key = decodeURIComponent(param[0]);
     const value = decodeURIComponent(param[1] || "");
-
+    if (!value && paramsArr.length == 1) {
+      return paramsString
+    }
     paramObj[key] = value
   }
 
@@ -403,7 +406,7 @@ const pasteOnly = () => {
 //
 //   setValue(newContent)
 // }
-const handleMenuClick = (clickInfo: any) => {
+const handleTabMenuClick = (clickInfo: any) => {
   switch (clickInfo.key) {
     case '1':
       panes.value.map((value: any) => {
@@ -443,6 +446,14 @@ const handleMenuClick = (clickInfo: any) => {
   }
   contentRefSetFocus()
 }
+
+const handleConfigMenuClick = (clickInfo: any) => {
+  switch (clickInfo.key){
+    case "useWrap":
+      contentConfig.useWrap = !contentConfig.useWrap;
+      break;
+  }
+}
 </script>
 
 <template>
@@ -455,7 +466,7 @@ const handleMenuClick = (clickInfo: any) => {
         </a-button>
         <a-dropdown>
           <template #overlay>
-            <a-menu @click="handleMenuClick">
+            <a-menu @click="handleTabMenuClick">
               <a-menu-item key="1">
                 关闭左侧
               </a-menu-item>
@@ -496,7 +507,19 @@ const handleMenuClick = (clickInfo: any) => {
       <!--      <a-button @click="escapeCursor">光标处去转义</a-button>-->
       <!--      <a-button @click="showModal">历史</a-button>-->
       <a-button @click="base64Cursor">光标处base64</a-button>
-      <a-button @click="setConfig">配置(暂未落盘)</a-button>
+
+
+      <a-dropdown placement="top">
+        <a-button>配置(暂未落盘)</a-button>
+        <template #overlay>
+          <a-menu @click="handleConfigMenuClick">
+            <a-menu-item key="useWrap">
+              切换换行
+            </a-menu-item>
+          </a-menu>
+        </template>
+      </a-dropdown>
+
     </a-space>
 
     <div>
