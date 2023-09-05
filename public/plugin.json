@@ -6,6 +6,9 @@
     "main": "http://localhost:5173/",
     "preload": "D:\\companies\\tools\\decode_utf8\\dist\\preload.js"
   },
+  "pluginSetting": {
+    "single": false
+  },
   "features": [
     {
       "code": "utf8_to_json",

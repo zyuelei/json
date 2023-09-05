@@ -69,20 +69,44 @@ const favorite = () => {
 }
 const getFormatData = (str: string, formatParam?: formatParam) => {
   const order = formatParam?.formatOrder ?? [supportAutoType.unicode, supportAutoType.utf8]
+  const format = formatParam?.formatOpen ?? true;
+
+  if (!format) {
+    return str
+  }
   let result = str
   let hasJson = false
+
   try {
-    result = getJson(str)
-    hasJson = true
-    console.info('f:json')
+    if (!hasJson && order.includes(supportAutoType.get_param as never)) {
+      const paramJson = getParamJson(str)
+      if (typeof paramJson === 'object' && JSON.stringify(paramJson) != '{}') {
+        result = jsonFormat(paramJson)
+        hasJson = true
+        console.info('f:get_param')
+      }
+    }
   } catch (e) {
+    console.info(e)
   }
+
   try {
-    if (order.includes(supportAutoType.unicode as never)) {
+    if (!hasJson) {
+      result = getJsonStr(str)
+      hasJson = true
+      console.info('f:json')
+    }
+  } catch (e) {
+
+  }
+
+  try {
+    if (!hasJson && order.includes(supportAutoType.unicode as never)) {
       result = unicodeString(result)
       console.info('f:unicode')
     }
   } catch (e) {
+
   }
   try {
     if (!hasJson && order.includes(supportAutoType.utf8 as never)) {
@@ -90,29 +114,38 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
       console.info('f:utf8')
     }
   } catch (e) {
+
   }
+
 
   try {
     if (!hasJson && result != str) {
-      result = getJson(result)
+      result = getJsonStr(result)
       hasJson = true
     }
   } catch (e) {
-  }
-  if (!hasJson && order.includes(supportAutoType.get_param as never)) {
-    const paramJson = getParamJson(str)
-    if (paramJson != str && typeof paramJson === 'object' && JSON.stringify(paramJson) != '{}') {
-      result = jsonFormat(paramJson)
-      hasJson = true
-      console.info('f:get_param')
-    }
+
   }
   if (!hasJson && order.includes(supportAutoType.unserialize as never)) {
     const paramJson = getUnSerializeJson(str)
-    if (paramJson != str && typeof paramJson === 'object' && JSON.stringify(paramJson) != '{}') {
+    if (typeof paramJson === 'object' && JSON.stringify(paramJson) != '{}') {
       result = jsonFormat(paramJson)
       hasJson = true
       console.info('f:unserialize')
+    }
+  }
+
+  if (!hasJson) {
+    try {
+      const temp = JSON.parse('{"a":"' + result + '"}')
+      const tempJson = getEscapeJson(temp);
+      if (typeof tempJson == 'object' && tempJson.a && typeof tempJson.a == 'object') {
+        result = jsonFormat(tempJson.a)
+        hasJson = true
+        console.info('f:temp')
+      }
+    } catch (e) {
+
     }
   }
   return result;
@@ -147,7 +180,7 @@ const utf8String = (str: string) => {
   }
   return str
 }
-const getJson = (str: string) => {
+const getJsonStr = (str: string) => {
   try {
     const json = JSON.parse(str)
     str = jsonFormat(getEscapeJson(json))
@@ -231,7 +264,8 @@ enum supportAutoType {
 }
 
 type formatParam = {
-  formatOrder?: supportAutoType[]
+  formatOrder?: supportAutoType[],
+  formatOpen?: boolean
 }
 const setValue = (str?: string, formatParam?: formatParam) => {
   str = str === undefined ? '' : str
@@ -312,7 +346,9 @@ const getParamJson = (paramsString: string) => {
     // 取出键和值，并解码
     const key = decodeURIComponent(queryString.slice(startIndex, equalIndex));
     // 将键值对存储到 paramObj
-    paramObj[key] = decodeURIComponent(queryString.slice(equalIndex + 1, endIndex));
+    const val = decodeURIComponent(queryString.slice(equalIndex + 1, endIndex));
+
+    paramObj[key] = val.replace(/\+/g, ' ')
     // 更新下一个的开始位置
     startIndex = endIndex + 1;
   }
@@ -321,7 +357,7 @@ const getParamJson = (paramsString: string) => {
     return paramsString;
   }
 
-  return JSON.stringify(paramObj);
+  return paramObj;
 }
 
 const getBase64Json = (str: string) => {
@@ -386,12 +422,15 @@ const getDecode = () => {
   }
   try {
     const paramJson = getParamJson(parseText)
-    if (paramJson == parseText) {
+    if (typeof paramJson !== 'object') {
       contentRefSetFocus()
       return
     }
 
-    replaceNewContent(oldText, paramJson);
+    replaceNewContent(oldText, jsonFormat(paramJson), {
+      formatOrder: [supportAutoType.get_param],
+      formatOpen: false
+    } as formatParam);
     contentRefSetFocus()
   } catch (e) {
   }
@@ -420,7 +459,7 @@ const urlDecode = () => {
   }
 }
 
-function replaceNewContent(oldText?: string, json?: any) {
+function replaceNewContent(oldText?: string, json?: any, formatParam ?: any) {
   let content = getActive().content;
   if (!content) {
   }
@@ -428,7 +467,7 @@ function replaceNewContent(oldText?: string, json?: any) {
   const newContent = content.replace(oldText, json || '')
   if (!newContent || newContent == content) {
   }
-  setValue(newContent)
+  setValue(newContent, formatParam)
 }
 
 const getUnSerializeJson = (parseText: string) => {

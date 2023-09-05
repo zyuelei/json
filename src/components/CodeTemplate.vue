@@ -112,11 +112,11 @@ const copy = () => {
 
 }
 
-const getByteCount = (str: string) => {
-  const encoder = new TextEncoder();
-  const byteArray = encoder.encode(str);
-  return byteArray.length;
-}
+// const getByteCount = (str: string) => {
+//   const encoder = new TextEncoder();
+//   const byteArray = encoder.encode(str);
+//   return byteArray.length;
+// }
 
 const cursorText = () => {
   const session = editor.value.getSession();
@@ -134,7 +134,7 @@ const cursorText = () => {
         startIndex = index
       }
     }
-    hasIndex += getByteCount(value.value)
+    hasIndex += value.value.length
     if (cursorPosition.column < hasIndex) {
       startType = 'end'
     }
