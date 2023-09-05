@@ -842,6 +842,7 @@ const handleConfigMenuClick = (clickInfo: any) => {
 :deep(.ant-space-item) {
   margin-bottom: 0 !important;
   padding-bottom: 0 !important;
+  margin-right: 4px !important;
 }
 
 :deep(.ant-tabs-content) {
