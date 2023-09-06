@@ -1,6 +1,6 @@
 export interface config {
     tabSize?: number
-    fontSize?: string
+    fontSize?: number
     useWrap?: boolean
     printMargin?: boolean
     theme?: string

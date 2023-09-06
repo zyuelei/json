@@ -27,6 +27,6 @@ html,body {
 
 #app {
     display: flex;
-    text-align: center;
+    /*text-align: center;*/
     width: 100%;
 }

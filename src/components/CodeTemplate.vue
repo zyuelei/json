@@ -17,7 +17,7 @@ const propsRle = reactive(props)
 const propsRef = toRefs<{ config: config }>(propsRle)
 watchEffect(() => {
   if (editor.value) {
-    typeof propsRef.config.value.fontSize == 'string' && editor.value.setFontSize(propsRef.config.value.fontSize) // 设置文字大小
+    typeof propsRef.config.value.fontSize == 'number' && editor.value.setFontSize(propsRef.config.value.fontSize + 'px') // 设置文字大小
     typeof propsRef.config.value.useWrap == 'boolean' && editor.value.getSession().setUseWrapMode(propsRef.config.value.useWrap) // 是否换行
     typeof propsRef.config.value.tabSize == 'number' && editor.value.getSession().setTabSize(propsRef.config.value.tabSize) // 制表符长度
     typeof propsRef.config.value.printMargin == 'boolean' && editor.value.setShowPrintMargin(propsRef.config.value.printMargin) // 打印边距可见
@@ -30,7 +30,6 @@ const showEdit = (editorDiv: any) => {
   editor.value = ace.edit(editorDiv);
   editor.value.getSession().setMode('ace/mode/json');
   editor.value.$blockScrolling = Infinity
-
 
   editor.value.on('paste', function () {
     setTimeout(() => {
