@@ -1,5 +1,6 @@
 <script setup lang="ts">import {reactive, ref, watch} from 'vue';
 import dayjs from 'dayjs'
+import CodeTemplate from "./CodeTemplate.vue";
 import MonacoTemplate from "./MonacoTemplate.vue";
 import utf8 from "utf8";
 import {config} from "../interface";
@@ -9,10 +10,11 @@ import {message} from 'ant-design-vue';
 
 const props = defineProps<{ theme: string }>()
 const childElementRefs = ref([]);
+const useCodeTemplate = ref('moncaco')
 
 const contentConfig = reactive<config>({
   fontSize: 14,
-  tabSize:4,
+  tabSize: 4,
   printMargin: false,
   useWrap: false,
   theme: props.theme
@@ -238,7 +240,7 @@ const getEscapeJson = (json: any) => {
 
 
 const jsonFormat = (str: object) => {
-  return JSON.stringify(str, null, 4)
+  return JSON.stringify(str, null, contentConfig.value.tabSize)
 }
 //
 const jsonArchive = (str: string) => {
@@ -745,6 +747,17 @@ const handleConfigMenuClick = (clickInfo: any) => {
     case "useWrap":
       contentConfig.useWrap = !contentConfig.useWrap;
       break;
+    case "switchCode":
+      if (getActive().content || panes.value.length > 1) {
+        message.error('有数据无法切换');
+        return
+      }
+      const next: any = {
+        code: 'moncaco',
+        moncaco: 'code'
+      };
+      useCodeTemplate.value = next[useCodeTemplate.value]
+      break;
   }
 }
 </script>
@@ -791,6 +804,9 @@ const handleConfigMenuClick = (clickInfo: any) => {
               <a-menu-item style="width: 80px" key="useWrap">
                 切换换行
               </a-menu-item>
+              <a-menu-item style="width: 80px" key="switchCode">
+                切换渲染器
+              </a-menu-item>
             </a-menu>
           </template>
         </a-dropdown>
@@ -799,12 +815,11 @@ const handleConfigMenuClick = (clickInfo: any) => {
       <a-tab-pane v-for="pane in panes" :key="pane.key" :tab="pane.title" :closable="pane.closable || !pane.favorite"
                   style="height: 100%;width: 100%;">
 
-        <!--        <CodeTemplate style="height: 100%;width: 100%;" :ref="getContentRef(pane.key)" :config="contentConfig"-->
-        <!--                      @onChange="onChange"></CodeTemplate>-->
-<!--        <MonacoTemplate style="height: 100%;width: 100%;" :ref="getContentRef(pane.key)" :config="contentConfig"-->
-<!--                        @onChange="onChange"></MonacoTemplate>-->
-
-        <MonacoTemplate style="height: 100%;width: 100%;" :ref="getContentRef(pane.key)" :config="contentConfig"
+        <CodeTemplate v-if="useCodeTemplate == 'code'" style="height: 100%;width: 100%;" :ref="getContentRef(pane.key)"
+                      :config="contentConfig"
+                      @onChange="onChange"></CodeTemplate>
+        <MonacoTemplate v-if="useCodeTemplate == 'moncaco'" style="height: 100%;width: 100%;"
+                        :ref="getContentRef(pane.key)" :config="contentConfig"
                         @onChange="onChange"></MonacoTemplate>
       </a-tab-pane>
     </a-tabs>
