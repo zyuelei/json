@@ -240,7 +240,7 @@ const getEscapeJson = (json: any) => {
 
 
 const jsonFormat = (str: object) => {
-  return JSON.stringify(str, null, contentConfig.value.tabSize)
+  return JSON.stringify(str, null, contentConfig.tabSize)
 }
 //
 const jsonArchive = (str: string) => {
