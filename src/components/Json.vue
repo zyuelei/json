@@ -1,4 +1,4 @@
-<script setup lang="ts">import {reactive, ref, toRef, watch, watchEffect} from 'vue';
+<script setup lang="ts">import {reactive, ref, watch, watchEffect} from 'vue';
 import dayjs from 'dayjs'
 import CodeTemplate from "./CodeTemplate.vue";
 import MonacoTemplate from "./MonacoTemplate.vue";
@@ -897,7 +897,7 @@ const handleConfigMenuClick = (clickInfo: any) => {
   color: rgba(255, 255, 255, 0.85);
 }
 
-.dark{
+.dark {
   background: #303133;
 }
 </style>
