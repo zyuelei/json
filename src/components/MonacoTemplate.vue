@@ -56,7 +56,10 @@ const handleResize = () => {
     editor.layout();
   }
 };
-
+// const cursorLastPosition = ref({
+//   lineNumber: 1,
+//   column: 1
+// })
 const init = () => {
   editor = monaco.editor.create(editorDiv.value, {
     minimap: {enabled: false},
@@ -77,6 +80,16 @@ const init = () => {
     const content = editor.getValue() // 给父组件实时返回最新文本
     emit('onChange', {content: content, format: true});
   });
+
+  // editor.onDidChangeCursorPosition(event => {
+  //   const position = event.position;
+  //   const lineNumber = position.lineNumber;
+  //   const column = position.column;
+  //   cursorLastPosition.value.lineNumber = position.lineNumber;
+  //   cursorLastPosition.value.column = position.column;
+  //   console.log("c:", lineNumber, column);
+  // });
+
   window.addEventListener('resize', handleResize);
 }
 
@@ -137,13 +150,17 @@ const insert = (text: string) => {
 
 const cursorText = () => {
   const cursorPosition = editor.getSelection().getStartPosition();
+  // console.log("d:", cursorPosition.lineNumber, cursorPosition.column);
+  // if (cursorPosition.lineNumber != cursorLastPosition.value.lineNumber){
+  //   debugger
+  // }
   const token = editor.getModel().getLineContent(cursorPosition.lineNumber);
-  const search = findString(token, cursorPosition.column)
+  const search = findString(token, cursorPosition.column - 2)
 
   function findString(str: string, i: number) {
     let startIndex = -1;
     let endIndex = -1;
-    if (i <= 0) {
+    if (i < 0) {
       return null
     }
 
@@ -156,15 +173,14 @@ const cursorText = () => {
     }
 
     // 从指定位置i往后搜索结束双引号
-    for (let j = i; j < str.length; j++) {
+    for (let j = i + 1; j < str.length; j++) {
       if (str[j] === '"' && str[j - 1] !== '\\') {
         endIndex = j;
         break;
       }
     }
-
     // 提取被双引号包裹的字符串
-    if (endIndex !== -1 && endIndex >= startIndex) {
+    if (endIndex !== -1 && startIndex !== -1 && endIndex > startIndex) {
       return str.slice(startIndex, endIndex + 1);
     }
 

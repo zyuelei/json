@@ -85,7 +85,6 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   }
   let result = str
   let hasJson = false
-
   try {
     if (!hasJson && order.includes(supportAutoType.get_param as never)) {
       const paramJson = getParamJson(str)
@@ -314,13 +313,15 @@ const getContentRef = (index: number): any => {
 }
 
 const contentRefCursorText = () => {
-  return getContentRef(activeKey.value).value[0].cursorText()
+  const res = getContentRef(activeKey.value).value[0].cursorText();
+  return res
 }
 // const getParamJson = (paramsString: string) => {
 //   const paramObj: any = {};
 //   const queryString = paramsString.replace(/^[^?]*\?/, '');
 //   const paramsArr = queryString.split("&");
 //
+//   for (let i = 0; i < paramsArr.length; i++) {
 //   for (let i = 0; i < paramsArr.length; i++) {
 //     const param = paramsArr[i].split("=");
 //     debugger
@@ -396,7 +397,7 @@ function getContentCursorOrAll() {
 
 const base64Decode = () => {
   let {parseText, oldText, isCursor} = getContentCursorOrAll();
-
+debugger
   if (!parseText) {
     contentRefSetFocus()
     return
@@ -419,9 +420,9 @@ const base64Decode = () => {
     } else {
       replaceNewContent(oldText, json);
     }
-    contentRefSetFocus()
   } catch (e) {
   }
+  contentRefSetFocus()
 }
 const getDecode = () => {
   let {parseText, oldText} = getContentCursorOrAll();
@@ -438,7 +439,7 @@ const getDecode = () => {
 
     replaceNewContent(oldText, jsonFormat(paramJson), {
       formatOrder: [supportAutoType.get_param],
-      formatOpen: false
+      // formatOpen: false
     } as formatParam);
     contentRefSetFocus()
   } catch (e) {
@@ -470,8 +471,7 @@ const urlDecode = () => {
 
 function replaceNewContent(oldText?: string, json?: any, formatParam ?: any) {
   let content = getActive().content;
-  if (!content) {
-  }
+
   json = typeof json == 'object' ? JSON.stringify(json) : json
   const newContent = content.replace(oldText, json || '')
   if (!newContent || newContent == content) {
