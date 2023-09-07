@@ -91,18 +91,18 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
       if (typeof paramJson === 'object' && JSON.stringify(paramJson) != '{}') {
         result = jsonFormat(paramJson)
         hasJson = true
-        console.info('f:get_param')
+        // console.info('f:get_param')
       }
     }
   } catch (e) {
-    console.info(e)
+    // console.info(e)
   }
 
   try {
     if (!hasJson) {
       result = getJsonStr(str)
       hasJson = true
-      console.info('f:json')
+      // console.info('f:json')
     }
   } catch (e) {
 
@@ -111,7 +111,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   try {
     if (!hasJson && order.includes(supportAutoType.unicode as never)) {
       result = unicodeString(result)
-      console.info('f:unicode')
+      // console.info('f:unicode')
     }
   } catch (e) {
 
@@ -119,7 +119,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   try {
     if (!hasJson && order.includes(supportAutoType.utf8 as never)) {
       result = utf8String(result)
-      console.info('f:utf8')
+      // console.info('f:utf8')
     }
   } catch (e) {
 
@@ -139,7 +139,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
     if (typeof paramJson === 'object' && JSON.stringify(paramJson) != '{}') {
       result = jsonFormat(paramJson)
       hasJson = true
-      console.info('f:unserialize')
+      // console.info('f:unserialize')
     }
   }
 
@@ -150,7 +150,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
       if (typeof tempJson == 'object' && tempJson.a && typeof tempJson.a == 'object') {
         result = jsonFormat(tempJson.a)
         hasJson = true
-        console.info('f:temp')
+        // console.info('f:temp')
       }
     } catch (e) {
 
