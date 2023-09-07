@@ -397,7 +397,6 @@ function getContentCursorOrAll() {
 
 const base64Decode = () => {
   let {parseText, oldText, isCursor} = getContentCursorOrAll();
-debugger
   if (!parseText) {
     contentRefSetFocus()
     return
