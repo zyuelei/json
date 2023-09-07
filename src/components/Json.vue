@@ -435,11 +435,7 @@ const getDecode = () => {
       contentRefSetFocus()
       return
     }
-
-    replaceNewContent(oldText, jsonFormat(paramJson), {
-      formatOrder: [supportAutoType.get_param],
-      // formatOpen: false
-    } as formatParam);
+    replaceNewContent(oldText, paramJson);
     contentRefSetFocus()
   } catch (e) {
   }
@@ -474,6 +470,7 @@ function replaceNewContent(oldText?: string, json?: any, formatParam ?: any) {
   json = typeof json == 'object' ? JSON.stringify(json) : json
   const newContent = content.replace(oldText, json || '')
   if (!newContent || newContent == content) {
+    return
   }
   setValue(newContent, formatParam)
 }
