@@ -29,16 +29,14 @@ if (typeof utools != 'undefined') {
   showSon.value = true;
 }
 
-const {darkAlgorithm, compactAlgorithm} = theme;
-const newTheme = {
-  algorithm: themeVal.value == 'light' ? theme.compactAlgorithm : [darkAlgorithm, compactAlgorithm],
-};
 </script>
 
 <template>
   <div class="container">
-    <a-config-provider :theme="newTheme">
-      <Json :theme="themeVal" v-if="showSon"></Json>
+    <a-config-provider :theme="{
+        algorithm: themeVal == 'light' ? theme.compactAlgorithm : [ theme.compactAlgorithm, theme.darkAlgorithm],
+      }">
+      <Json :theme="themeVal" @changeTheme="toggleTheme" v-if="showSon"></Json>
     </a-config-provider>
   </div>
 </template>

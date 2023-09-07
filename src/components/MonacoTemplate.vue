@@ -46,7 +46,7 @@ watchEffect(() => {
     typeof propsRef.config.value.useWrap == 'boolean' ? (newConfig.wordWrap = propsRef.config.value.useWrap ? 'on' : 'off') : '' // 是否换行
     typeof propsRef.config.value.tabSize == 'number' ? (newConfig.tabSize = propsRef.config.value.tabSize) : '' // 制表符长度
     // typeof propsRef.config.value.printMargin == 'boolean' && editor.setShowPrintMargin(propsRef.config.value.printMargin) // 打印边距可见
-    propsRef.config.value.theme == 'dark' && monaco.editor.setTheme('vs-dark') // 设置主题
+    propsRef.config.value.theme == 'dark' ? monaco.editor.setTheme('vs-dark') : monaco.editor.setTheme('vs') // 设置主题
     editor.updateOptions(newConfig);
   }
 })

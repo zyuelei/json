@@ -1,4 +1,4 @@
-<script setup lang="ts">import {reactive, ref, watch} from 'vue';
+<script setup lang="ts">import {reactive, ref, toRef, watch, watchEffect} from 'vue';
 import dayjs from 'dayjs'
 import CodeTemplate from "./CodeTemplate.vue";
 import MonacoTemplate from "./MonacoTemplate.vue";
@@ -8,7 +8,9 @@ import {DownOutlined, LockOutlined, SettingOutlined, UnlockOutlined} from '@ant-
 import {unserialize} from 'serialize-php';
 import {message} from 'ant-design-vue';
 
+const emit = defineEmits(['changeTheme'])
 const props = defineProps<{ theme: string }>()
+const theme = ref(props.theme)
 const childElementRefs = ref([]);
 const useCodeTemplate = ref('moncaco')
 
@@ -17,7 +19,11 @@ const contentConfig = reactive<config>({
   tabSize: 4,
   printMargin: false,
   useWrap: false,
-  theme: props.theme
+  theme: theme.value
+})
+watchEffect(() => {
+  contentConfig.theme = theme.value
+  emit('changeTheme', theme.value);
 })
 // @ts-ignore
 window.onPluginEnter && window.onPluginEnter(({payload, type, code}: any) => {
@@ -752,18 +758,25 @@ const handleConfigMenuClick = (clickInfo: any) => {
         message.error('有数据无法切换');
         return
       }
-      const next: any = {
+      const nextCodeTemplete: any = {
         code: 'moncaco',
         moncaco: 'code'
       };
-      useCodeTemplate.value = next[useCodeTemplate.value]
+      useCodeTemplate.value = nextCodeTemplete[useCodeTemplate.value]
+      break;
+    case "switchTheme":
+      const nextTheme: any = {
+        dark: 'light',
+        light: 'dark'
+      }
+      theme.value = nextTheme[theme.value]
       break;
   }
 }
 </script>
 
 <template>
-  <div :class="`container ` + props.theme">
+  <div :class="`container ` + theme">
     <a-tabs class="tabs" v-model:activeKey="activeKey" type="editable-card" @edit="onEdit">
       <template #rightExtra>
         <a-button style="height: 100%" :disabled="activeKey == 0" @click="favorite">
@@ -803,6 +816,9 @@ const handleConfigMenuClick = (clickInfo: any) => {
             <a-menu @click="handleConfigMenuClick">
               <a-menu-item style="width: 100px" key="useWrap">
                 切换换行
+              </a-menu-item>
+              <a-menu-item style="width: 100px" key="switchTheme">
+                切换主题
               </a-menu-item>
               <a-menu-item style="width: 100px" key="switchCode">
                 切换渲染器
@@ -879,5 +895,9 @@ const handleConfigMenuClick = (clickInfo: any) => {
 
 .dark :deep(.ant-tabs-nav-more) {
   color: rgba(255, 255, 255, 0.85);
+}
+
+.dark{
+  background: #303133;
 }
 </style>

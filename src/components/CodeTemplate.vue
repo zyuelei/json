@@ -21,7 +21,7 @@ watchEffect(() => {
     typeof propsRef.config.value.useWrap == 'boolean' && editor.value.getSession().setUseWrapMode(propsRef.config.value.useWrap) // 是否换行
     typeof propsRef.config.value.tabSize == 'number' && editor.value.getSession().setTabSize(propsRef.config.value.tabSize) // 制表符长度
     typeof propsRef.config.value.printMargin == 'boolean' && editor.value.setShowPrintMargin(propsRef.config.value.printMargin) // 打印边距可见
-    propsRef.config.value.theme == 'dark' && editor.value.setTheme('ace/theme/monokai') // 设置主题
+    propsRef.config.value.theme == 'dark' ? editor.value.setTheme('ace/theme/monokai') : editor.value.setTheme('ace/theme/textmate') // 设置主题
   }
 })
 const emit = defineEmits(['onChange'])
