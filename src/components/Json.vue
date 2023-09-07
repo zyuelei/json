@@ -860,6 +860,7 @@ const handleConfigMenuClick = (clickInfo: any) => {
 
 .tabs {
   flex: 1;
+  overflow: hidden;
 }
 
 :deep(.ant-space-item) {
