@@ -801,10 +801,10 @@ const handleConfigMenuClick = (clickInfo: any) => {
           </a-button>
           <template #overlay>
             <a-menu @click="handleConfigMenuClick">
-              <a-menu-item style="width: 80px" key="useWrap">
+              <a-menu-item style="width: 100px" key="useWrap">
                 切换换行
               </a-menu-item>
-              <a-menu-item style="width: 80px" key="switchCode">
+              <a-menu-item style="width: 100px" key="switchCode">
                 切换渲染器
               </a-menu-item>
             </a-menu>

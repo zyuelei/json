@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {onMounted, reactive, ref, toRefs, watchEffect} from 'vue'
+import {onBeforeUnmount, onMounted, reactive, ref, toRefs, watchEffect} from 'vue'
 
 import * as ace from 'brace';
 import 'brace/ext/searchbox';
@@ -164,6 +164,11 @@ const insert = (text: string) => {
 }
 onMounted(() => {
   showEdit(editorDiv.value)
+});
+onBeforeUnmount(() => {
+  editor.value?.destroy();
+  editorDiv.value = null;
+  editor.value = null
 });
 defineExpose({setVal, focus, copy, insert, cursorText})
 </script>

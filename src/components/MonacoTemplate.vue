@@ -6,7 +6,7 @@ import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
 import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker'
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
-import {onMounted, ref} from "vue";
+import {onBeforeUnmount, onMounted, ref, watch} from "vue";
 import {reactive, toRefs, watchEffect} from "vue";
 import {config} from "../interface";
 
@@ -48,10 +48,14 @@ watchEffect(() => {
     // typeof propsRef.config.value.printMargin == 'boolean' && editor.setShowPrintMargin(propsRef.config.value.printMargin) // 打印边距可见
     propsRef.config.value.theme == 'dark' && monaco.editor.setTheme('vs-dark') // 设置主题
     editor.updateOptions(newConfig);
-    console.info(newConfig)
   }
 })
 
+const handleResize = () => {
+  if (editor) {
+    editor.layout();
+  }
+};
 
 const init = () => {
   editor = monaco.editor.create(editorDiv.value, {
@@ -64,7 +68,6 @@ const init = () => {
   editor.onDidChangeModelContent(() => {
     const content = editor.getValue() // 给父组件实时返回最新文本
     // console.info(value,i,v)
-    console.info('change')
     emit('onChange', {content, format: false});
   })
 
@@ -73,6 +76,8 @@ const init = () => {
     const content = editor.getValue() // 给父组件实时返回最新文本
     emit('onChange', {content: content, format: true});
   });
+
+  window.addEventListener('resize', handleResize);
 }
 
 
@@ -172,6 +177,13 @@ onMounted(() => {
   init()
   editorInit.value = true
 })
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize);
+  editor?.dispose();
+  editorDiv.value = null;
+  editor = null
+});
 defineExpose({setVal, focus, copy, insert, cursorText})
 </script>
 
