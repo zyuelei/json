@@ -62,8 +62,9 @@ const init = () => {
     minimap: {enabled: false},
     value: "",
     suggestOnTriggerCharacters: false,
-    language: 'json'
+    language: 'json',
   })
+  editor.getModel().setEOL(monaco.editor.EndOfLineSequence)
 
   editor.onDidChangeModelContent(() => {
     const content = editor.getValue() // 给父组件实时返回最新文本
@@ -76,7 +77,6 @@ const init = () => {
     const content = editor.getValue() // 给父组件实时返回最新文本
     emit('onChange', {content: content, format: true});
   });
-
   window.addEventListener('resize', handleResize);
 }
 
