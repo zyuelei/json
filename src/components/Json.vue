@@ -754,7 +754,7 @@ const handleConfigMenuClick = (clickInfo: any) => {
       break;
     case "switchCode":
       if (getActive().content || panes.value.length > 1) {
-        message.error('有数据无法切换');
+        message.error('有数据或者多个选项卡无法切换');
         return
       }
       const nextCodeTemplete: any = {
