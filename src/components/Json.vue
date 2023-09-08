@@ -464,7 +464,7 @@ const urlDecode = () => {
   }
 }
 
-function replaceNewContent(oldText?: string, json?: any, formatParam ?: any) {
+function replaceNewContent(oldText?: string, json?: any, formatParam ?: formatParam) {
   let content = getActive().content;
 
   json = typeof json == 'object' ? JSON.stringify(json) : json
@@ -500,6 +500,94 @@ const unserializeDecode = () => {
     contentRefSetFocus()
   }
 }
+
+const isTimestamp = (str: string | number) => {
+  return /^\d{10}$|^\d{13}$/.test(str + '');
+}
+
+const isDateTime = (str: string) => {
+  const timestamp = Date.parse(str + '');
+  return !isNaN(timestamp);
+}
+
+const getNowTimestamp = () => {
+  return Math.floor(Date.now() / 1000);
+}
+
+const formatTimeStamp = (str: string, length?: number) => {
+  str = '' + str
+  const calcLength = str.length == 23 ? 13 : 10;
+  length = length || calcLength
+  const timestamp = Date.parse(str);
+  const timestampString = timestamp.toString();
+  return timestampString.substring(0, length);
+}
+
+const formateDate = (timestamp: number | string, format?: string) => {
+  let length = ('' + timestamp).length;
+  if (length == 10) {
+    timestamp = parseInt(timestamp + '') * 1000;
+    format = format ? format : 'YYYY-mm-dd HH:MM:SS'
+  } else if (length == 13) {
+    timestamp = parseInt(timestamp + '');
+    format = format ? format : 'YYYY-mm-dd HH:MM:SS.SSS'
+  }
+  if (!format) {
+    return ''
+  }
+  const date = new Date(timestamp);
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
+  const second = String(date.getSeconds()).padStart(2, '0');
+  const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+  return format
+      .replace('YYYY', '' + year)
+      .replace('mm', month)
+      .replace('dd', day)
+      .replace('HH', hour)
+      .replace('MM', minute)
+      .replace('SS', second)
+      .replace('SSS', milliseconds);
+}
+
+const timestampTrans = () => {
+  let {parseText, oldText, isCursor} = getContentCursorOrAll();
+  if (!parseText) {
+    const timestamp = getNowTimestamp();
+    contentRefInsert(timestamp + '')
+    contentRefSetFocus()
+    return
+  }
+  try {
+    let newData;
+    if (isTimestamp(parseText)) {
+      // 时间戳支持10 / 13 位
+      newData = formateDate(parseText)
+    } else if (isDateTime(parseText)) {
+      // 时间转换
+      const timestamp = formatTimeStamp(parseText);
+      if (!isTimestamp(timestamp)) {
+        throw new Error('错误的时间戳');
+      }
+      newData = timestamp;
+    } else {
+      throw new Error('非时间格式');
+    }
+
+    if (isCursor) {
+      newData = '"' + newData + '"'
+    }
+    replaceNewContent(oldText, newData);
+  } catch (e) {
+
+  }
+  contentRefSetFocus()
+}
+
 
 const add = () => {
   const nowTime = new Date().getTime();
@@ -836,7 +924,7 @@ const handleConfigMenuClick = (clickInfo: any) => {
       </a-tab-pane>
     </a-tabs>
 
-    <a-space wrap style="justify-content: end;margin: 2px;">
+    <a-space :size="4" style="justify-content: end;margin-bottom: 2px">
       <a-button @click="format">格式化</a-button>
       <a-button @click="pasteOnly">仅粘贴</a-button>
       <!--      <a-button @click="paste">粘贴</a-button>-->
@@ -850,6 +938,7 @@ const handleConfigMenuClick = (clickInfo: any) => {
       <a-button @click="urlDecode">url_decode</a-button>
       <a-button @click="base64Decode">base64_decode</a-button>
       <a-button @click="unserializeDecode">unserialize</a-button>
+      <a-button @click="timestampTrans">timestamp</a-button>
 
 
     </a-space>
@@ -875,11 +964,11 @@ const handleConfigMenuClick = (clickInfo: any) => {
   overflow: hidden;
 }
 
-:deep(.ant-space-item) {
+/*:deep(.ant-space-item) {
   margin-bottom: 0 !important;
   padding-bottom: 0 !important;
-  margin-right: 4px !important;
-}
+  //margin-right: 4px !important;
+}*/
 
 :deep(.ant-tabs-content) {
   height: 100%;
