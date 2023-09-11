@@ -8,7 +8,8 @@ import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 import {onBeforeUnmount, onMounted, ref} from "vue";
 import {reactive, toRefs, watchEffect} from "vue";
-import {config} from "../interface";
+import {config, editContentMy} from "../interface";
+import {IRange} from "monaco-editor";
 
 const editorDiv = ref();
 const editorInit = ref()
@@ -133,7 +134,50 @@ const copy = () => {
   } else {
     return editor.getValue()
   }
+}
 
+const getContentInfo = (): editContentMy => {
+  const model = editor.getModel();
+
+  // 获取最后一行和最后一列的值
+  const lastLine = model.getLineCount();
+  const lastColumn = model.getLineMaxColumn(lastLine);
+
+  const selectionRange = editor.getSelection();
+  // 获取选中的文本
+  const selectedText = editor.getModel().getValueInRange(selectionRange);
+  const lineContent = editor.getModel().getLineContent(selectionRange.positionLineNumber);
+  return {
+    startLine: selectionRange.startLineNumber,
+    endLine: selectionRange.endLineNumber,
+    startColumn: selectionRange.startColumn,
+    endColumn: selectionRange.endColumn,
+    positionLine: selectionRange.positionLineNumber,
+    positionColumn: selectionRange.positionColumn,
+    lastLine: lastLine,
+    lastColumn: lastColumn,
+    firstLine: 1,
+    firstColumn: 1,
+    selectText: selectedText,
+    lineText: lineContent,
+  }
+}
+const toRange = (startLine: number, endLine: number, startColumn: number, endColumn: number) => {
+  return {
+    startLineNumber: startLine,
+    startColumn: endLine,
+    endLineNumber: startColumn,
+    endColumn: endColumn,
+  }
+}
+const replace = (range: IRange, newText: string) => {
+  editor.getModel().pushEditOperations(
+      [],
+      [{
+        range,
+        text: newText
+      }]
+  );
 }
 
 const insert = (text: string) => {
@@ -147,48 +191,6 @@ const insert = (text: string) => {
   editor.pushUndoStop()
 }
 
-
-const cursorText = () => {
-  const cursorPosition = editor.getSelection().getStartPosition();
-  // console.log("d:", cursorPosition.lineNumber, cursorPosition.column);
-  // if (cursorPosition.lineNumber != cursorLastPosition.value.lineNumber){
-  //   debugger
-  // }
-  const token = editor.getModel().getLineContent(cursorPosition.lineNumber);
-  const search = findString(token, cursorPosition.column - 2)
-
-  function findString(str: string, i: number) {
-    let startIndex = -1;
-    let endIndex = -1;
-    if (i < 0) {
-      return null
-    }
-
-    // 从指定位置i往前搜索起始双引号
-    for (let j = i; j >= 0; j--) {
-      if (str[j] === '"' && str[j - 1] !== '\\') {
-        startIndex = j;
-        break;
-      }
-    }
-
-    // 从指定位置i往后搜索结束双引号
-    for (let j = i + 1; j < str.length; j++) {
-      if (str[j] === '"' && str[j - 1] !== '\\') {
-        endIndex = j;
-        break;
-      }
-    }
-    // 提取被双引号包裹的字符串
-    if (endIndex !== -1 && startIndex !== -1 && endIndex > startIndex) {
-      return str.slice(startIndex, endIndex + 1);
-    }
-
-    return null; // 没有找到对应的字符串
-  }
-
-  return search;
-}
 onMounted(() => {
   init()
   editorInit.value = true
@@ -200,7 +202,7 @@ onBeforeUnmount(() => {
   editorDiv.value = null;
   editor = null
 });
-defineExpose({setVal, focus, copy, insert, cursorText})
+defineExpose({setVal, focus, copy, insert, replace, toRange, getContentInfo})
 </script>
 
 <template>

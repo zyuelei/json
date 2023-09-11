@@ -3,13 +3,15 @@ import dayjs from 'dayjs'
 import CodeTemplate from "./CodeTemplate.vue";
 import MonacoTemplate from "./MonacoTemplate.vue";
 import utf8 from "utf8";
-import {config} from "../interface";
+import {config, editContentMy, matchRangeMy, rangeMy} from "../interface";
 import {DownOutlined, LockOutlined, SettingOutlined, UnlockOutlined} from '@ant-design/icons-vue';
 import {unserialize} from 'serialize-php';
 import {message} from 'ant-design-vue';
 
 const emit = defineEmits(['changeTheme'])
-const props = defineProps<{ theme: string }>()
+const props = defineProps<{
+  theme: string
+}>()
 const theme = ref(props.theme)
 const childElementRefs = ref([]);
 const useCodeTemplate = ref('moncaco')
@@ -281,28 +283,27 @@ const setValue = (str?: string, formatParam?: formatParam) => {
   saveActiveValue(str)
   contentRefSetVal(str)
 }
+const getActiveEdit = (): any => {
+  return getContentRef(activeKey.value).value[0]
+}
 
 const contentRefSetVal = (str: string) => {
   setTimeout(() => {
-    getContentRef(activeKey.value).value[0].setVal(str)
+    getActiveEdit().setVal(str)
   }, 100)
 }
 const contentRefSetFocus = () => {
   setTimeout(() => {
-    getContentRef(activeKey.value).value[0].focus()
+    getActiveEdit().focus()
   }, 100)
 }
 const contentRefCopy = () => {
-  return getContentRef(activeKey.value).value[0].copy()
+  return getActiveEdit().copy()
 }
 
 const contentRefInsert = (text: string) => {
-  return getContentRef(activeKey.value).value[0].insert(text)
+  return getActiveEdit().insert(text)
 }
-
-// const contentRefCursorText = () => {
-//   return getContentRef(activeKey.value).value[0].cursorText()
-// }
 
 const getContentRef = (index: number): any => {
   if (!childElementRefs.value[index]) {
@@ -312,10 +313,77 @@ const getContentRef = (index: number): any => {
   return childElementRefs.value[index];
 }
 
-const contentRefCursorText = () => {
-  const res = getContentRef(activeKey.value).value[0].cursorText();
-  return res
+
+const findLineQuotesInfo = (contentInfo: editContentMy): matchRangeMy | null => {
+  let str = contentInfo.lineText
+  let positionColumn = contentInfo.positionColumn
+
+  let startIndex = -1;
+  let endIndex = -1;
+  if (positionColumn < 0) {
+    return null
+  }
+
+  // 从指定位置i往前搜索起始双引号
+  for (let j = positionColumn; j >= 0; j--) {
+    if (str[j] === '"' && str[j - 1] !== '\\') {
+      startIndex = j;
+      break;
+    }
+  }
+
+  // 从指定位置i往后搜索结束双引号
+  for (let j = positionColumn + 1; j < str.length; j++) {
+    if (str[j] === '"' && str[j - 1] !== '\\') {
+      endIndex = j;
+      break;
+    }
+  }
+  // 提取被双引号包裹的字符串
+  if (endIndex !== -1 && startIndex !== -1 && endIndex > startIndex) {
+    return {
+      startLine: contentInfo.positionLine,
+      endLine: contentInfo.positionLine,
+      startColumn: startIndex,
+      endColumn: endIndex + 1,
+      matchText: str.slice(startIndex, endIndex + 1),
+      isCursor: true,
+      newContent: (str) => {
+        const jsonStr = isJson(str);
+        if (jsonStr) {
+          return jsonStr
+        }
+        return '"' + str + '"'
+      }
+    };
+  }
+
+  return null; // 没有找到对应的字符串
 }
+
+const isJson = (value: any, format?: boolean) => {
+  format = format || false
+  try {
+    if (typeof value == 'object') {
+      if (format) {
+        return jsonFormat(value);
+      } else {
+        return JSON.stringify(value)
+      }
+    }
+    const json = JSON.parse(value);
+    if (typeof json == 'object') {
+      if (format) {
+        return jsonFormat(json)
+      } else {
+        return value
+      }
+    }
+  } catch (e) {
+  }
+  return false;
+}
+
 // const getParamJson = (paramsString: string) => {
 //   const paramObj: any = {};
 //   const queryString = paramsString.replace(/^[^?]*\?/, '');
@@ -378,66 +446,76 @@ const getBase64Json = (str: string) => {
   }
 }
 
-function getContentCursorOrAll() {
-  let parseText
-  let oldText
-  let isCursor
-  const text = contentRefCursorText()
-  if (!text) {
-    parseText = getActive().content
-    oldText = parseText
-    isCursor = false
-  } else {
-    oldText = text
-    parseText = text.substring(1, text.length - 1);
-    isCursor = true
+function getContentCursorOrAll(type ?: string) {
+  type = type || 'line'
+  const contentInfo: editContentMy = getActiveEdit().getContentInfo();
+  let selectInfo: matchRangeMy | null = null;
+  switch (type) {
+    case 'line':
+      selectInfo = findLineQuotesInfo(contentInfo);
+      break;
   }
-  return {parseText, oldText, isCursor};
+  if (selectInfo != null) {
+    return {
+      contentInfo: contentInfo,
+      selectInfo: selectInfo,
+    }
+  }
+  return {
+    contentInfo: {...contentInfo},
+    selectInfo: {
+      isCursor: false,
+      startLine: contentInfo.firstLine,
+      endLine: contentInfo.lastLine,
+      startColumn: contentInfo.firstColumn,
+      endColumn: contentInfo.lastColumn,
+      matchText: getActive().content as string,
+      newContent: function (str) {
+        const jsonStr = isJson(str, true);
+        if (jsonStr) {
+          return jsonStr
+        }
+        return str
+      }
+    } as matchRangeMy
+  }
 }
 
 const base64Decode = () => {
-  let {parseText, oldText, isCursor} = getContentCursorOrAll();
+  let {selectInfo} = getContentCursorOrAll();
+  const parseText = selectInfo.matchText;
   if (!parseText) {
     contentRefSetFocus()
     return
   }
   try {
-    const json = getBase64Json(parseText)
-    let isJson = false
-    try {
-      JSON.parse(json)
-      isJson = true
-    } catch (e) {
-
-    }
-    if (json == parseText) {
+    const newData = getBase64Json(parseText)
+    if (newData == parseText) {
       contentRefSetFocus()
       return
     }
-    if (isCursor && !isJson) {
-      replaceNewContent(parseText, json);
-    } else {
-      replaceNewContent(oldText, json);
-    }
+    replaceNewContent(selectInfo, selectInfo.newContent(newData))
   } catch (e) {
   }
   contentRefSetFocus()
 }
 const getDecode = () => {
-  let {parseText, oldText} = getContentCursorOrAll();
+  let {selectInfo} = getContentCursorOrAll();
+  const parseText = selectInfo.matchText;
   if (!parseText) {
     contentRefSetFocus()
     return
   }
   try {
-    const paramJson = getParamJson(parseText)
-    if (typeof paramJson !== 'object') {
+    const newData = getParamJson(parseText)
+    if (typeof newData !== 'object') {
       contentRefSetFocus()
       return
     }
-    replaceNewContent(oldText, paramJson);
+    replaceNewContent(selectInfo, selectInfo.newContent(newData))
     contentRefSetFocus()
   } catch (e) {
+    console.info(e)
   }
 }
 
@@ -450,29 +528,31 @@ function getUrlDecodeString(parseText: string) {
 }
 
 const urlDecode = () => {
-  let {parseText, oldText} = getContentCursorOrAll();
+  let {selectInfo} = getContentCursorOrAll();
+  const parseText = selectInfo.matchText;
 
   if (!parseText) {
     contentRefSetFocus()
     return
   }
   try {
-    const urlDecode = getUrlDecodeString(parseText)
-    replaceNewContent(oldText, urlDecode);
+    const newData = getUrlDecodeString(parseText)
+    if (newData == parseText) {
+      contentRefSetFocus()
+      return
+    }
+    replaceNewContent(selectInfo, selectInfo.newContent(newData))
     contentRefSetFocus()
   } catch (e) {
   }
 }
 
-function replaceNewContent(oldText?: string, json?: any, formatParam ?: formatParam) {
-  let content = getActive().content;
-
-  json = typeof json == 'object' ? JSON.stringify(json) : json
-  const newContent = content.replace(oldText, json || '')
-  if (!newContent || newContent == content) {
+function replaceNewContent(range: rangeMy, newContent: any) {
+  if (!newContent) {
     return
   }
-  setValue(newContent, formatParam)
+  newContent = typeof newContent == 'object' ? JSON.stringify(newContent) : newContent;
+  getActiveEdit().replace(range, newContent);
 }
 
 const getUnSerializeJson = (parseText: string) => {
@@ -483,18 +563,19 @@ const getUnSerializeJson = (parseText: string) => {
   }
 }
 const unserializeDecode = () => {
-  let {parseText, oldText} = getContentCursorOrAll();
+  let {selectInfo} = getContentCursorOrAll();
+  const parseText = selectInfo.matchText;
   if (!parseText) {
     contentRefSetFocus()
     return
   }
   try {
-    const json = getUnSerializeJson(parseText)
-    if (json == parseText) {
+    const newData = getUnSerializeJson(parseText)
+    if (newData == parseText) {
       contentRefSetFocus()
       return
     }
-    replaceNewContent(oldText, json);
+    replaceNewContent(selectInfo, selectInfo.newContent(newData))
     contentRefSetFocus()
   } catch (e) {
     contentRefSetFocus()
@@ -555,7 +636,8 @@ const formateDate = (timestamp: number | string, format?: string) => {
 }
 
 const timestampTrans = () => {
-  let {parseText, oldText, isCursor} = getContentCursorOrAll();
+  let {selectInfo} = getContentCursorOrAll();
+  const parseText = selectInfo.matchText;
   if (!parseText) {
     const timestamp = getNowTimestamp();
     contentRefInsert(timestamp + '')
@@ -578,10 +660,7 @@ const timestampTrans = () => {
       throw new Error('非时间格式');
     }
 
-    if (isCursor) {
-      newData = '"' + newData + '"'
-    }
-    replaceNewContent(oldText, newData);
+    replaceNewContent(selectInfo, selectInfo.newContent(newData))
   } catch (e) {
 
   }
