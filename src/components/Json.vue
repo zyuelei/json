@@ -1,6 +1,6 @@
 <script setup lang="ts">import {reactive, ref, watch, watchEffect} from 'vue';
 import dayjs from 'dayjs'
-import CodeTemplate from "./CodeTemplate.vue";
+import BraceTemplate from "./BraceTemplate.vue";
 import MonacoTemplate from "./MonacoTemplate.vue";
 import utf8 from "utf8";
 import {config, ContentSelectType, editContentMy, matchRangeMy, rangeMy} from "../interface";
@@ -14,6 +14,7 @@ const props = defineProps<{
 }>()
 const theme = ref(props.theme)
 const childElementRefs = ref([]);
+// const useCodeTemplate = ref('brace')
 const useCodeTemplate = ref('moncaco')
 
 const contentConfig = reactive<config>({
@@ -346,7 +347,6 @@ const findLineSelectInfo = (contentInfo: editContentMy): matchRangeMy | null => 
 const findLineQuotesInfo = (contentInfo: editContentMy): matchRangeMy | null => {
   let str = getRowData(getActive().content, contentInfo.positionLine)
   let positionColumn = contentInfo.positionColumn - 2
-
   let startIndex = -1;
   let endIndex = -1;
   if (positionColumn < 0) {
@@ -397,36 +397,34 @@ const findLineQuotesInfo = (contentInfo: editContentMy): matchRangeMy | null => 
   return null; // 没有找到对应的字符串
 }
 const inQuotes = (str: string, startColumn: number, endColumn: number) => {
-  if (startColumn <= 0 || endColumn >= str.length) {
+  if (startColumn <= 1 || endColumn - 1 >= str.length) {
     return false;
   }
-  return str[startColumn - 1] == '"' && str[endColumn - 1]
+  return str[startColumn - 2] == '"' && str[endColumn - 1]
 }
 const findLineNumberInfo = (contentInfo: editContentMy): matchRangeMy | null => {
   let str = getRowData(getActive().content, contentInfo.positionLine)
-  let positionColumn = contentInfo.positionColumn - 1
-
+  let positionColumn = contentInfo.positionColumn - 2
   let startIndex = -1;
   let endIndex = -1;
-  if (positionColumn < 0) {
+  if (positionColumn < 1) {
     return null
   }
 
   // 从指定位置i往前搜索起始双引号
-  for (let j = positionColumn; j >= 0; j--) {
-    if (!/\d/.test(str[j])) {
+  for (let j = positionColumn + 1; j >= 0; j--) {
+    if (/\d/.test(str[j]) && !/\d/.test(str[j - 1])) {
+      startIndex = j;
       break;
     }
-    startIndex = j;
   }
   // 从指定位置i往后搜索结束双引号
-  for (let j = positionColumn + 1; j < str.length; j++) {
-    if (!/\d/.test(str[j])) {
+  for (let j = positionColumn; j < str.length; j++) {
+    if (/\d/.test(str[j]) && !/\d/.test(str[j + 1])) {
+      endIndex = j;
       break;
     }
-    endIndex = j;
   }
-  debugger
   // 提取被双引号包裹的字符串
   if (endIndex !== -1 && startIndex !== -1 && endIndex > startIndex) {
     return {
@@ -439,9 +437,8 @@ const findLineNumberInfo = (contentInfo: editContentMy): matchRangeMy | null => 
       isCursor: true,
       newContent: function (str) {
         let text;
-        const inQuote = inQuotes(this.oldText, this.startColumn, this.endColumn - 1)
+        const inQuote = inQuotes(this.oldText, this.startColumn, this.endColumn)
         const isNum = /^\d+$/.test(str) || /^\d+\.\d+$/.test(str)
-        debugger
         if (inQuote || isNum) {
           text = str
         } else {
@@ -819,7 +816,7 @@ const timestampTrans = () => {
     replaceNewContent(contentInfo, selectInfo, newData)
     return true
   } catch (e) {
-
+    console.info(e)
   }
   return false;
 }
@@ -1115,8 +1112,8 @@ const handleConfigMenuClick = (clickInfo: any) => {
         return
       }
       const nextCodeTemplete: any = {
-        code: 'moncaco',
-        moncaco: 'code'
+        brace: 'moncaco',
+        moncaco: 'brace'
       };
       useCodeTemplate.value = nextCodeTemplete[useCodeTemplate.value]
       break;
@@ -1187,9 +1184,9 @@ const handleConfigMenuClick = (clickInfo: any) => {
       <a-tab-pane v-for="pane in panes" :key="pane.key" :tab="pane.title" :closable="pane.closable || !pane.favorite"
                   style="height: 100%;width: 100%;">
 
-        <CodeTemplate v-if="useCodeTemplate == 'code'" style="height: 100%;width: 100%;" :ref="getContentRef(pane.key)"
+        <BraceTemplate v-if="useCodeTemplate == 'brace'" style="height: 100%;width: 100%;" :ref="getContentRef(pane.key)"
                       :config="contentConfig"
-                      @onChange="onChange"></CodeTemplate>
+                      @onChange="onChange"></BraceTemplate>
         <MonacoTemplate v-if="useCodeTemplate == 'moncaco'" style="height: 100%;width: 100%;"
                         :ref="getContentRef(pane.key)" :config="contentConfig"
                         @onChange="onChange"></MonacoTemplate>

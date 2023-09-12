@@ -6,7 +6,7 @@ import 'brace/ext/searchbox';
 import 'brace/ext/language_tools';
 import 'brace/mode/json';
 import 'brace/theme/monokai';
-import {config} from "../interface";
+import {config, editContentMy, rangeMy} from "../interface";
 
 const editorDiv = ref();
 const editor = ref();
@@ -100,16 +100,16 @@ const setVal = (str: string) => {
 const focus = () => {
   editor.value.focus()
 }
-const copy = () => {
-
-  const copyContent = editor.value.getCopyText();
-  if (copyContent) {
-    return copyContent;
-  } else {
-    return editor.value.getValue()
-  }
-
-}
+// const copy = () => {
+//
+//   const copyContent = editor.value.getCopyText();
+//   if (copyContent) {
+//     return copyContent;
+//   } else {
+//     return editor.value.getValue()
+//   }
+//
+// }
 
 // const getByteCount = (str: string) => {
 //   const encoder = new TextEncoder();
@@ -117,50 +117,92 @@ const copy = () => {
 //   return byteArray.length;
 // }
 
-const cursorText = () => {
-  const session = editor.value.getSession();
-  const cursorPosition = editor.value.getCursorPosition();
-  const token = session.getTokens(cursorPosition.row);
-
-  let startType = 'start'
-  let startIndex = -1
-  let endIndex = -1
-  let hasIndex = 0
-  let result: any[] = []
-  token.map((value: any, index: number) => {
-    if (value.value && value.type == 'string' && startType == 'start') {
-      if ('"' === value.value.charAt(0)) {
-        startIndex = index
-      }
-    }
-    hasIndex += value.value.length
-    if (cursorPosition.column < hasIndex) {
-      startType = 'end'
-    }
-    if (value.value && value.type == 'string' && startType == 'end') {
-      if ('"' === value.value.charAt(value.value.length - 1)) {
-        endIndex = index
-        return;
-      }
-    }
-  })
-  if (endIndex >= startIndex && endIndex > -1) {
-    token.map((value: any, index: number) => {
-      if (index >= startIndex && index <= endIndex) {
-        result.push(value.value)
-      }
-    })
-  }
-  let resultStr = ''
-  if (result) {
-    resultStr = result.join('')
-  }
-  return resultStr
-
-}
+// const cursorText = () => {
+//   const session = editor.value.getSession();
+//   const cursorPosition = editor.value.getCursorPosition();
+//   const token = session.getTokens(cursorPosition.row);
+//
+//   let startType = 'start'
+//   let startIndex = -1
+//   let endIndex = -1
+//   let hasIndex = 0
+//   let result: any[] = []
+//   token.map((value: any, index: number) => {
+//     if (value.value && value.type == 'string' && startType == 'start') {
+//       if ('"' === value.value.charAt(0)) {
+//         startIndex = index
+//       }
+//     }
+//     hasIndex += value.value.length
+//     if (cursorPosition.column < hasIndex) {
+//       startType = 'end'
+//     }
+//     if (value.value && value.type == 'string' && startType == 'end') {
+//       if ('"' === value.value.charAt(value.value.length - 1)) {
+//         endIndex = index
+//         return;
+//       }
+//     }
+//   })
+//   if (endIndex >= startIndex && endIndex > -1) {
+//     token.map((value: any, index: number) => {
+//       if (index >= startIndex && index <= endIndex) {
+//         result.push(value.value)
+//       }
+//     })
+//   }
+//   let resultStr = ''
+//   if (result) {
+//     resultStr = result.join('')
+//   }
+//   return resultStr
+//
+// }
 
 const insert = (text: string) => {
   editor.value.insert(text)
+}
+
+const replace = (range: any, newText: string) => {
+  editor.value.getSession().replace(range, newText);
+}
+
+const toRange = ({startLine, endLine, startColumn, endColumn}: rangeMy) => {
+  return {
+    // startRow: startLine - 1,
+    // startColumn: startColumn - 1,
+    // endRow: endLine - 1,
+    // endColumn: endColumn - 1,
+    start: {
+      row: startLine - 1,
+      column: startColumn - 1,
+    },
+    end: {
+      row: endLine - 1,
+      column: endColumn - 1,
+    }
+  }
+}
+const getContentInfo = (): editContentMy => {
+  const session = editor.value.getSession();
+  const cursorPosition = editor.value.getCursorPosition();
+  const selectionRange = editor.value.getSelectionRange();
+  const lastLine = session.getLength()
+  const lastLineContent = session.getLine(lastLine - 1);
+  const totalColumns = lastLineContent.length;
+
+  return {
+    startLine: selectionRange.start.row + 1,
+    endLine: selectionRange.start.column + 1,
+    startColumn: selectionRange.end.row + 1,
+    endColumn: selectionRange.end.column + 1,
+    positionLine: cursorPosition.row + 1,
+    positionColumn: cursorPosition.column + 1,
+    lastLine: lastLine + 1,
+    lastColumn: totalColumns + 1,
+    firstLine: 1,
+    firstColumn: 1,
+  }
 }
 onMounted(() => {
   showEdit(editorDiv.value)
@@ -170,7 +212,7 @@ onBeforeUnmount(() => {
   editorDiv.value = null;
   editor.value = null
 });
-defineExpose({setVal, focus, copy, insert, cursorText})
+defineExpose({setVal, focus, insert, replace, toRange, getContentInfo})
 </script>
 
 <template>
