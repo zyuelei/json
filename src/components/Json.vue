@@ -378,7 +378,8 @@ const findLineQuotesInfo = (contentInfo: editContentMy): matchRangeMy | null => 
       matchText: str.slice(startIndex + 1, endIndex),
       oldText: str,
       isCursor: true,
-      newContent: (str) => {
+      newContent: function (str) {
+        debugger
         const jsonStr = isJson(str);
         if (jsonStr) {
           return {
@@ -386,9 +387,10 @@ const findLineQuotesInfo = (contentInfo: editContentMy): matchRangeMy | null => 
             text: jsonStr
           }
         }
+        const inQuote = inQuotes(this.oldText, this.startColumn + 1, this.endColumn - 1, false)
         return {
           isJson: false,
-          text: '"' + str + '"'
+          text: inQuote ? '"' + str + '"' : str
         }
       }
     };
@@ -396,11 +398,14 @@ const findLineQuotesInfo = (contentInfo: editContentMy): matchRangeMy | null => 
 
   return null; // 没有找到对应的字符串
 }
-const inQuotes = (str: string, startColumn: number, endColumn: number) => {
-  if (startColumn <= 1 || endColumn - 1 >= str.length) {
+const inQuotes = (str: string, startColumn: number, endColumn: number, allMatchReturn: boolean) => {
+  if (startColumn == 1 && endColumn - 1 == str.length) {
+    return allMatchReturn
+  }
+  if (startColumn < 2 || endColumn - 1 > str.length) {
     return false;
   }
-  return str[startColumn - 2] == '"' && str[endColumn - 1]
+  return str[startColumn - 2] == '"' && str[endColumn - 1] == '"'
 }
 const findLineNumberInfo = (contentInfo: editContentMy): matchRangeMy | null => {
   let str = getRowData(getActive().content, contentInfo.positionLine)
@@ -437,7 +442,7 @@ const findLineNumberInfo = (contentInfo: editContentMy): matchRangeMy | null => 
       isCursor: true,
       newContent: function (str) {
         let text;
-        const inQuote = inQuotes(this.oldText, this.startColumn, this.endColumn)
+        const inQuote = inQuotes(this.oldText, this.startColumn, this.endColumn, true)
         const isNum = /^\d+$/.test(str) || /^\d+\.\d+$/.test(str)
         if (inQuote || isNum) {
           text = str
@@ -753,9 +758,9 @@ const isDateTime = (str: string) => {
   return !isNaN(timestamp);
 }
 //
-// const getNowTimestamp = () => {
-//   return Math.floor(Date.now() / 1000);
-// }
+const getNowTimestamp = () => {
+  return Math.floor(Date.now() / 1000);
+}
 
 const formatTimeStamp = (str: string, length?: number) => {
   str = '' + str
@@ -798,7 +803,11 @@ const formateDate = (timestamp: number | string, format?: string) => {
 }
 const timestampDecode = () => {
   if (!timestampTrans()) {
-    dateTimeTrans()
+    if (!dateTimeTrans()) {
+      const timestamp = getNowTimestamp();
+      contentRefInsert(timestamp + '')
+      contentRefSetFocus()
+    }
   }
   contentRefSetFocus()
 }
@@ -836,23 +845,9 @@ const dateTimeTrans = () => {
     } else {
       return false
     }
-    selectInfo.newContent = (str) => {
-      const jsonStr = isJson(str);
-      if (jsonStr) {
-        return {
-          isJson: true,
-          text: jsonStr
-        }
-      }
-      return {
-        isJson: false,
-        text: '"' + str + '"'
-      }
-    }
     replaceNewContent(contentInfo, selectInfo, newData)
     return true
   } catch (e) {
-
   }
   return false;
 }
@@ -1184,9 +1179,10 @@ const handleConfigMenuClick = (clickInfo: any) => {
       <a-tab-pane v-for="pane in panes" :key="pane.key" :tab="pane.title" :closable="pane.closable || !pane.favorite"
                   style="height: 100%;width: 100%;">
 
-        <BraceTemplate v-if="useCodeTemplate == 'brace'" style="height: 100%;width: 100%;" :ref="getContentRef(pane.key)"
-                      :config="contentConfig"
-                      @onChange="onChange"></BraceTemplate>
+        <BraceTemplate v-if="useCodeTemplate == 'brace'" style="height: 100%;width: 100%;"
+                       :ref="getContentRef(pane.key)"
+                       :config="contentConfig"
+                       @onChange="onChange"></BraceTemplate>
         <MonacoTemplate v-if="useCodeTemplate == 'moncaco'" style="height: 100%;width: 100%;"
                         :ref="getContentRef(pane.key)" :config="contentConfig"
                         @onChange="onChange"></MonacoTemplate>
