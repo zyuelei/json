@@ -8,7 +8,7 @@ import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 import {onBeforeUnmount, onMounted, ref} from "vue";
 import {reactive, toRefs, watchEffect} from "vue";
-import {config, editContentMy} from "../interface";
+import {config, editContentMy, rangeMy} from "../interface";
 import {IRange} from "monaco-editor";
 
 const editorDiv = ref();
@@ -144,9 +144,6 @@ const getContentInfo = (): editContentMy => {
   const lastColumn = model.getLineMaxColumn(lastLine);
 
   const selectionRange = editor.getSelection();
-  // 获取选中的文本
-  const selectedText = editor.getModel().getValueInRange(selectionRange);
-  const lineContent = editor.getModel().getLineContent(selectionRange.positionLineNumber);
   return {
     startLine: selectionRange.startLineNumber,
     endLine: selectionRange.endLineNumber,
@@ -158,15 +155,13 @@ const getContentInfo = (): editContentMy => {
     lastColumn: lastColumn,
     firstLine: 1,
     firstColumn: 1,
-    selectText: selectedText,
-    lineText: lineContent,
   }
 }
-const toRange = (startLine: number, endLine: number, startColumn: number, endColumn: number) => {
+const toRange = ({startLine, endLine, startColumn, endColumn}: rangeMy) => {
   return {
     startLineNumber: startLine,
-    startColumn: endLine,
-    endLineNumber: startColumn,
+    startColumn: startColumn,
+    endLineNumber: endLine,
     endColumn: endColumn,
   }
 }
@@ -175,9 +170,11 @@ const replace = (range: IRange, newText: string) => {
       [],
       [{
         range,
-        text: newText
+        text: newText,
+        forceMoveMarkers: true
       }]
   );
+  editor.setScrollPosition({scrollLeft: 0});
 }
 
 const insert = (text: string) => {

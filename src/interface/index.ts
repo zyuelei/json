@@ -15,6 +15,7 @@ export interface rangeMy {
 
 export interface matchRangeMy extends rangeMy {
     matchText: string,
+    oldText: string,
     isCursor: boolean,
 
     newContent(str: any): { isJson: boolean, text: string },
@@ -27,6 +28,10 @@ export interface editContentMy extends rangeMy {
     firstColumn: number,
     lastLine: number,
     lastColumn: number,
-    selectText: string,
-    lineText: string,
+}
+
+export enum ContentSelectType {
+    line_number,
+    line_quotes,
+    select,
 }

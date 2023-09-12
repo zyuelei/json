@@ -3,7 +3,7 @@ import dayjs from 'dayjs'
 import CodeTemplate from "./CodeTemplate.vue";
 import MonacoTemplate from "./MonacoTemplate.vue";
 import utf8 from "utf8";
-import {config, editContentMy, matchRangeMy, rangeMy} from "../interface";
+import {config, ContentSelectType, editContentMy, matchRangeMy, rangeMy} from "../interface";
 import {DownOutlined, LockOutlined, SettingOutlined, UnlockOutlined} from '@ant-design/icons-vue';
 import {unserialize} from 'serialize-php';
 import {message} from 'ant-design-vue';
@@ -99,7 +99,6 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   } catch (e) {
     // console.info(e)
   }
-
   try {
     if (!hasJson) {
       result = getJsonStr(str)
@@ -118,6 +117,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   } catch (e) {
 
   }
+
   try {
     if (!hasJson && order.includes(supportAutoType.utf8 as never)) {
       result = utf8String(result)
@@ -126,7 +126,6 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   } catch (e) {
 
   }
-
 
   try {
     if (!hasJson && result != str) {
@@ -263,9 +262,10 @@ const jsonArchive = (str: string) => {
   return str
 }
 
-// const escapeString = (text: string) => {
-//   return text.replace(/\\\\/g, "\\").replace(/\\\"/g, '"')
-// }
+const escapeString = (text: string) => {
+  return text.replace(/\\\\/g, "\\").replace(/\\\"/g, '"')
+}
+
 enum supportAutoType {
   'get_param',
   'utf8',
@@ -297,8 +297,9 @@ const contentRefSetFocus = () => {
     getActiveEdit().focus()
   }, 20)
 }
-const contentRefCopy = () => {
-  return getActiveEdit().copy()
+const getSelectContentData = () => {
+  let {selectInfo} = getContentCursorOrAll(ContentSelectType.select);
+  return selectInfo.matchText
 }
 
 const contentRefInsert = (text: string) => {
@@ -313,6 +314,34 @@ const getContentRef = (index: number): any => {
   return childElementRefs.value[index];
 }
 
+const findLineSelectInfo = (contentInfo: editContentMy): matchRangeMy | null => {
+  const str = getSubstringByRange(getActive().content, contentInfo)
+  if (!str) {
+    return null
+  }
+  return {
+    startLine: contentInfo.startLine,
+    endLine: contentInfo.endLine,
+    startColumn: contentInfo.startColumn,
+    endColumn: contentInfo.endColumn,
+    matchText: str,
+    oldText: str,
+    isCursor: true,
+    newContent: (str) => {
+      const jsonStr = isJson(str);
+      if (jsonStr) {
+        return {
+          isJson: true,
+          text: jsonStr
+        }
+      }
+      return {
+        isJson: false,
+        text: '"' + str + '"'
+      }
+    }
+  }
+}
 
 const findLineQuotesInfo = (contentInfo: editContentMy): matchRangeMy | null => {
   let str = getRowData(getActive().content, contentInfo.positionLine)
@@ -323,7 +352,6 @@ const findLineQuotesInfo = (contentInfo: editContentMy): matchRangeMy | null => 
   if (positionColumn < 0) {
     return null
   }
-  debugger
 
   // 从指定位置i往前搜索起始双引号
   for (let j = positionColumn; j >= 0; j--) {
@@ -345,9 +373,10 @@ const findLineQuotesInfo = (contentInfo: editContentMy): matchRangeMy | null => 
     return {
       startLine: contentInfo.positionLine,
       endLine: contentInfo.positionLine,
-      startColumn: startIndex,
+      startColumn: startIndex + 1,
       endColumn: endIndex + 2,
       matchText: str.slice(startIndex + 1, endIndex),
+      oldText: str,
       isCursor: true,
       newContent: (str) => {
         const jsonStr = isJson(str);
@@ -360,6 +389,67 @@ const findLineQuotesInfo = (contentInfo: editContentMy): matchRangeMy | null => 
         return {
           isJson: false,
           text: '"' + str + '"'
+        }
+      }
+    };
+  }
+
+  return null; // 没有找到对应的字符串
+}
+const inQuotes = (str: string, startColumn: number, endColumn: number) => {
+  if (startColumn <= 0 || endColumn >= str.length) {
+    return false;
+  }
+  return str[startColumn - 1] == '"' && str[endColumn - 1]
+}
+const findLineNumberInfo = (contentInfo: editContentMy): matchRangeMy | null => {
+  let str = getRowData(getActive().content, contentInfo.positionLine)
+  let positionColumn = contentInfo.positionColumn - 1
+
+  let startIndex = -1;
+  let endIndex = -1;
+  if (positionColumn < 0) {
+    return null
+  }
+
+  // 从指定位置i往前搜索起始双引号
+  for (let j = positionColumn; j >= 0; j--) {
+    if (!/\d/.test(str[j])) {
+      break;
+    }
+    startIndex = j;
+  }
+  // 从指定位置i往后搜索结束双引号
+  for (let j = positionColumn + 1; j < str.length; j++) {
+    if (!/\d/.test(str[j])) {
+      break;
+    }
+    endIndex = j;
+  }
+  debugger
+  // 提取被双引号包裹的字符串
+  if (endIndex !== -1 && startIndex !== -1 && endIndex > startIndex) {
+    return {
+      startLine: contentInfo.positionLine,
+      endLine: contentInfo.positionLine,
+      startColumn: startIndex + 1,
+      endColumn: endIndex + 2,
+      matchText: str.slice(startIndex, endIndex + 1),
+      oldText: str,
+      isCursor: true,
+      newContent: function (str) {
+        let text;
+        const inQuote = inQuotes(this.oldText, this.startColumn, this.endColumn - 1)
+        const isNum = /^\d+$/.test(str) || /^\d+\.\d+$/.test(str)
+        debugger
+        if (inQuote || isNum) {
+          text = str
+        } else {
+          text = '"' + str + '"'
+        }
+        return {
+          isJson: false,
+          text: text
         }
       }
     };
@@ -390,26 +480,6 @@ const isJson = (value: any, format?: boolean) => {
   }
   return false;
 }
-
-// const getParamJson = (paramsString: string) => {
-//   const paramObj: any = {};
-//   const queryString = paramsString.replace(/^[^?]*\?/, '');
-//   const paramsArr = queryString.split("&");
-//
-//   for (let i = 0; i < paramsArr.length; i++) {
-//   for (let i = 0; i < paramsArr.length; i++) {
-//     const param = paramsArr[i].split("=");
-//     debugger
-//     const key = decodeURIComponent(param[0]);
-//     const value = decodeURIComponent(param[1] || "");
-//     if (!value && paramsArr.length == 1) {
-//       return paramsString
-//     }
-//     paramObj[key] = value
-//   }
-//
-//   return JSON.stringify(paramObj);
-// }
 
 const getParamJson = (paramsString: string) => {
   const paramObj: any = {};
@@ -453,13 +523,18 @@ const getBase64Json = (str: string) => {
   }
 }
 
-function getContentCursorOrAll(type ?: string) {
-  type = type || 'line'
+function getContentCursorOrAll(type: ContentSelectType) {
   const contentInfo: editContentMy = getActiveEdit().getContentInfo();
   let selectInfo: matchRangeMy | null = null;
   switch (type) {
-    case 'line':
+    case ContentSelectType.line_number:
+      selectInfo = findLineNumberInfo(contentInfo);
+      break;
+    case ContentSelectType.line_quotes:
       selectInfo = findLineQuotesInfo(contentInfo);
+      break;
+    case ContentSelectType.select:
+      selectInfo = findLineSelectInfo(contentInfo);
       break;
   }
   if (selectInfo != null) {
@@ -495,7 +570,7 @@ function getContentCursorOrAll(type ?: string) {
 }
 
 const base64Decode = () => {
-  let {contentInfo, selectInfo} = getContentCursorOrAll();
+  let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
   const parseText = selectInfo.matchText;
   if (!parseText) {
     contentRefSetFocus()
@@ -513,7 +588,7 @@ const base64Decode = () => {
   contentRefSetFocus()
 }
 const getDecode = () => {
-  let {contentInfo, selectInfo} = getContentCursorOrAll();
+  let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
   const parseText = selectInfo.matchText;
   if (!parseText) {
     contentRefSetFocus()
@@ -525,7 +600,7 @@ const getDecode = () => {
       contentRefSetFocus()
       return
     }
-    replaceNewContent(contentInfo, selectInfo, newData)
+    replaceNewContent(contentInfo, selectInfo, newData, true)
     contentRefSetFocus()
   } catch (e) {
     console.info(e)
@@ -541,7 +616,7 @@ function getUrlDecodeString(parseText: string) {
 }
 
 const urlDecode = () => {
-  let {contentInfo, selectInfo} = getContentCursorOrAll();
+  let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
   const parseText = selectInfo.matchText;
 
   if (!parseText) {
@@ -560,14 +635,14 @@ const urlDecode = () => {
   }
 }
 
-function replaceNewContent(contentInfo: editContentMy, selectInfo: matchRangeMy, newData: any) {
+function replaceNewContent(contentInfo: editContentMy, selectInfo: matchRangeMy, newData: any, noFormat ?: boolean) {
   const newContentInfo = selectInfo.newContent(newData)
   let newContent = newContentInfo.text
   if (!newContent) {
     return
   }
   newContent = typeof newContent == 'object' ? JSON.stringify(newContent) : newContent;
-  if (newContentInfo.isJson) {
+  if (newContentInfo.isJson && noFormat !== true) {
 
     setValue(getSubstringByTwoRange(getActive().content, newContent, {
       startLine: contentInfo.firstLine,
@@ -581,7 +656,7 @@ function replaceNewContent(contentInfo: editContentMy, selectInfo: matchRangeMy,
       endColumn: contentInfo.lastColumn
     }))
   } else {
-    getActiveEdit().replace(selectInfo, newContent);
+    getActiveEdit().replace(getActiveEdit().toRange(selectInfo), newContent);
   }
 }
 
@@ -590,7 +665,7 @@ const getSubstringByTwoRange = (str: string, connectText: string, rangeOne: rang
 }
 const getRowData = (str: string, row: number): string => {
   const rows = str.split('\n');
-  if (row < 1 || row >= rows.length) {
+  if (row < 1 || row - 1 >= rows.length) {
     return ''; // 参数错误，返回空字符串
   }
 
@@ -640,11 +715,19 @@ const getUnSerializeJson = (parseText: string) => {
   try {
     return unserialize(parseText)
   } catch (e) {
+    const escape = escapeString(parseText)
+    if (escape != parseText) {
+      try {
+        return unserialize(escape)
+      } catch (e) {
+        throw e
+      }
+    }
     throw e
   }
 }
 const unserializeDecode = () => {
-  let {contentInfo, selectInfo} = getContentCursorOrAll();
+  let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
   const parseText = selectInfo.matchText;
   if (!parseText) {
     contentRefSetFocus()
@@ -672,10 +755,10 @@ const isDateTime = (str: string) => {
   const timestamp = Date.parse(str + '');
   return !isNaN(timestamp);
 }
-
-const getNowTimestamp = () => {
-  return Math.floor(Date.now() / 1000);
-}
+//
+// const getNowTimestamp = () => {
+//   return Math.floor(Date.now() / 1000);
+// }
 
 const formatTimeStamp = (str: string, length?: number) => {
   str = '' + str
@@ -716,37 +799,65 @@ const formateDate = (timestamp: number | string, format?: string) => {
       .replace('SS', second)
       .replace('SSS', milliseconds);
 }
-
-const timestampTrans = () => {
-  let {contentInfo, selectInfo} = getContentCursorOrAll();
-  const parseText = selectInfo.matchText;
-  if (!parseText) {
-    const timestamp = getNowTimestamp();
-    contentRefInsert(timestamp + '')
-    contentRefSetFocus()
-    return
+const timestampDecode = () => {
+  if (!timestampTrans()) {
+    dateTimeTrans()
   }
+  contentRefSetFocus()
+}
+const timestampTrans = () => {
+  let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_number);
+  const parseText = selectInfo.matchText;
   try {
     let newData;
     if (isTimestamp(parseText)) {
       // 时间戳支持10 / 13 位
       newData = formateDate(parseText)
-    } else if (isDateTime(parseText)) {
-      // 时间转换
-      const timestamp = formatTimeStamp(parseText);
-      if (!isTimestamp(timestamp)) {
-        throw new Error('错误的时间戳');
-      }
-      newData = timestamp;
     } else {
-      throw new Error('非时间格式');
+      return false
     }
-
     replaceNewContent(contentInfo, selectInfo, newData)
+    return true
   } catch (e) {
 
   }
-  contentRefSetFocus()
+  return false;
+}
+const dateTimeTrans = () => {
+  let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
+  const parseText = selectInfo.matchText;
+
+  try {
+    let newData;
+    if (isDateTime(parseText)) {
+      // 时间转换
+      const timestamp = formatTimeStamp(parseText);
+      if (!isTimestamp(timestamp)) {
+        return false
+      }
+      newData = timestamp;
+    } else {
+      return false
+    }
+    selectInfo.newContent = (str) => {
+      const jsonStr = isJson(str);
+      if (jsonStr) {
+        return {
+          isJson: true,
+          text: jsonStr
+        }
+      }
+      return {
+        isJson: false,
+        text: '"' + str + '"'
+      }
+    }
+    replaceNewContent(contentInfo, selectInfo, newData)
+    return true
+  } catch (e) {
+
+  }
+  return false;
 }
 
 
@@ -819,7 +930,7 @@ const windowCopy = (text: string) => {
 }
 
 const format = () => {
-  const text = contentRefCopy()
+  const text = getSelectContentData()
   setValue(text)
   contentRefSetFocus()
 }
@@ -828,7 +939,7 @@ const format = () => {
 //   windowCopy(text)
 // }
 const archiveCopy = () => {
-  const text = contentRefCopy()
+  const text = getSelectContentData()
   try {
     const archiveText = jsonArchive(text)
     windowCopy(archiveText)
@@ -837,7 +948,7 @@ const archiveCopy = () => {
   contentRefSetFocus()
 }
 const formDataCopy = () => {
-  const text = contentRefCopy()
+  const text = getSelectContentData()
   try {
     const archiveText = getFormDataString(text)
     windowCopy(archiveText)
@@ -1085,7 +1196,7 @@ const handleConfigMenuClick = (clickInfo: any) => {
       </a-tab-pane>
     </a-tabs>
 
-    <a-space :size="4" style="justify-content: end;margin-bottom: 2px">
+    <a-space :size="4" style="justify-content: end;margin-bottom: 2px;margin-right: 14px">
       <a-button @click="format">格式化</a-button>
       <a-button @click="pasteOnly">仅粘贴</a-button>
       <!--      <a-button @click="paste">粘贴</a-button>-->
@@ -1099,7 +1210,7 @@ const handleConfigMenuClick = (clickInfo: any) => {
       <a-button @click="urlDecode">url_decode</a-button>
       <a-button @click="base64Decode">base64_decode</a-button>
       <a-button @click="unserializeDecode">unserialize</a-button>
-      <a-button @click="timestampTrans">timestamp</a-button>
+      <a-button @click="timestampDecode">timestamp</a-button>
 
 
     </a-space>
