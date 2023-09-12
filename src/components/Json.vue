@@ -290,12 +290,12 @@ const getActiveEdit = (): any => {
 const contentRefSetVal = (str: string) => {
   setTimeout(() => {
     getActiveEdit().setVal(str)
-  }, 100)
+  }, 20)
 }
 const contentRefSetFocus = () => {
   setTimeout(() => {
     getActiveEdit().focus()
-  }, 100)
+  }, 20)
 }
 const contentRefCopy = () => {
   return getActiveEdit().copy()
@@ -315,14 +315,15 @@ const getContentRef = (index: number): any => {
 
 
 const findLineQuotesInfo = (contentInfo: editContentMy): matchRangeMy | null => {
-  let str = contentInfo.lineText
-  let positionColumn = contentInfo.positionColumn
+  let str = getRowData(getActive().content, contentInfo.positionLine)
+  let positionColumn = contentInfo.positionColumn - 2
 
   let startIndex = -1;
   let endIndex = -1;
   if (positionColumn < 0) {
     return null
   }
+  debugger
 
   // 从指定位置i往前搜索起始双引号
   for (let j = positionColumn; j >= 0; j--) {
@@ -345,15 +346,21 @@ const findLineQuotesInfo = (contentInfo: editContentMy): matchRangeMy | null => 
       startLine: contentInfo.positionLine,
       endLine: contentInfo.positionLine,
       startColumn: startIndex,
-      endColumn: endIndex + 1,
-      matchText: str.slice(startIndex, endIndex + 1),
+      endColumn: endIndex + 2,
+      matchText: str.slice(startIndex + 1, endIndex),
       isCursor: true,
       newContent: (str) => {
         const jsonStr = isJson(str);
         if (jsonStr) {
-          return jsonStr
+          return {
+            isJson: true,
+            text: jsonStr
+          }
         }
-        return '"' + str + '"'
+        return {
+          isJson: false,
+          text: '"' + str + '"'
+        }
       }
     };
   }
@@ -473,16 +480,22 @@ function getContentCursorOrAll(type ?: string) {
       newContent: function (str) {
         const jsonStr = isJson(str, true);
         if (jsonStr) {
-          return jsonStr
+          return {
+            isJson: true,
+            text: jsonStr
+          }
         }
-        return str
+        return {
+          isJson: false,
+          text: str
+        }
       }
     } as matchRangeMy
   }
 }
 
 const base64Decode = () => {
-  let {selectInfo} = getContentCursorOrAll();
+  let {contentInfo, selectInfo} = getContentCursorOrAll();
   const parseText = selectInfo.matchText;
   if (!parseText) {
     contentRefSetFocus()
@@ -494,13 +507,13 @@ const base64Decode = () => {
       contentRefSetFocus()
       return
     }
-    replaceNewContent(selectInfo, selectInfo.newContent(newData))
+    replaceNewContent(contentInfo, selectInfo, newData)
   } catch (e) {
   }
   contentRefSetFocus()
 }
 const getDecode = () => {
-  let {selectInfo} = getContentCursorOrAll();
+  let {contentInfo, selectInfo} = getContentCursorOrAll();
   const parseText = selectInfo.matchText;
   if (!parseText) {
     contentRefSetFocus()
@@ -512,7 +525,7 @@ const getDecode = () => {
       contentRefSetFocus()
       return
     }
-    replaceNewContent(selectInfo, selectInfo.newContent(newData))
+    replaceNewContent(contentInfo, selectInfo, newData)
     contentRefSetFocus()
   } catch (e) {
     console.info(e)
@@ -528,7 +541,7 @@ function getUrlDecodeString(parseText: string) {
 }
 
 const urlDecode = () => {
-  let {selectInfo} = getContentCursorOrAll();
+  let {contentInfo, selectInfo} = getContentCursorOrAll();
   const parseText = selectInfo.matchText;
 
   if (!parseText) {
@@ -541,20 +554,88 @@ const urlDecode = () => {
       contentRefSetFocus()
       return
     }
-    replaceNewContent(selectInfo, selectInfo.newContent(newData))
+    replaceNewContent(contentInfo, selectInfo, newData)
     contentRefSetFocus()
   } catch (e) {
   }
 }
 
-function replaceNewContent(range: rangeMy, newContent: any) {
+function replaceNewContent(contentInfo: editContentMy, selectInfo: matchRangeMy, newData: any) {
+  const newContentInfo = selectInfo.newContent(newData)
+  let newContent = newContentInfo.text
   if (!newContent) {
     return
   }
   newContent = typeof newContent == 'object' ? JSON.stringify(newContent) : newContent;
-  getActiveEdit().replace(range, newContent);
+  if (newContentInfo.isJson) {
+
+    setValue(getSubstringByTwoRange(getActive().content, newContent, {
+      startLine: contentInfo.firstLine,
+      startColumn: contentInfo.firstColumn,
+      endLine: selectInfo.startLine,
+      endColumn: selectInfo.startColumn
+    }, {
+      startLine: selectInfo.endLine,
+      startColumn: selectInfo.endColumn,
+      endLine: contentInfo.lastLine,
+      endColumn: contentInfo.lastColumn
+    }))
+  } else {
+    getActiveEdit().replace(selectInfo, newContent);
+  }
 }
 
+const getSubstringByTwoRange = (str: string, connectText: string, rangeOne: rangeMy, rangeTwo: rangeMy): string => {
+  return getSubstringByRange(str, rangeOne) + connectText + getSubstringByRange(str, rangeTwo)
+}
+const getRowData = (str: string, row: number): string => {
+  const rows = str.split('\n');
+  if (row < 1 || row >= rows.length) {
+    return ''; // 参数错误，返回空字符串
+  }
+
+  return rows[row - 1];
+}
+
+const getSubstringByRange = (str: string, range: rangeMy): string => {
+  const rows = str.split('\n');
+  const {startLine, endLine, startColumn, endColumn} = range;
+
+  if (
+      startLine > endLine ||
+      startLine < 1 ||
+      startLine > rows.length ||
+      endLine > rows.length ||
+      startColumn < 1 ||
+      endColumn < 1
+  ) {
+    return ''; // 参数错误，返回空字符串
+  }
+
+  const adjustedStartLine = startLine - 1;
+  const adjustedEndLine = endLine - 1;
+
+  // if (adjustedStartLine === adjustedEndLine && startColumn === endColumn) {
+  //   return '';
+  // }
+
+  let selectedText = "";
+
+  for (let i = adjustedStartLine; i <= adjustedEndLine; i++) {
+    const row = rows[i];
+    if (i === adjustedStartLine && i === adjustedEndLine) {
+      selectedText += row.slice(startColumn - 1, endColumn - 1);
+    } else if (i === adjustedStartLine) {
+      selectedText += row.slice(startColumn - 1) + "\n";
+    } else if (i === adjustedEndLine) {
+      selectedText += row.slice(0, endColumn - 1);
+    } else {
+      selectedText += row + "\n";
+    }
+  }
+
+  return selectedText;
+}
 const getUnSerializeJson = (parseText: string) => {
   try {
     return unserialize(parseText)
@@ -563,19 +644,20 @@ const getUnSerializeJson = (parseText: string) => {
   }
 }
 const unserializeDecode = () => {
-  let {selectInfo} = getContentCursorOrAll();
+  let {contentInfo, selectInfo} = getContentCursorOrAll();
   const parseText = selectInfo.matchText;
   if (!parseText) {
     contentRefSetFocus()
     return
   }
+
   try {
     const newData = getUnSerializeJson(parseText)
     if (newData == parseText) {
       contentRefSetFocus()
       return
     }
-    replaceNewContent(selectInfo, selectInfo.newContent(newData))
+    replaceNewContent(contentInfo, selectInfo, newData)
     contentRefSetFocus()
   } catch (e) {
     contentRefSetFocus()
@@ -636,7 +718,7 @@ const formateDate = (timestamp: number | string, format?: string) => {
 }
 
 const timestampTrans = () => {
-  let {selectInfo} = getContentCursorOrAll();
+  let {contentInfo, selectInfo} = getContentCursorOrAll();
   const parseText = selectInfo.matchText;
   if (!parseText) {
     const timestamp = getNowTimestamp();
@@ -660,7 +742,7 @@ const timestampTrans = () => {
       throw new Error('非时间格式');
     }
 
-    replaceNewContent(selectInfo, selectInfo.newContent(newData))
+    replaceNewContent(contentInfo, selectInfo, newData)
   } catch (e) {
 
   }

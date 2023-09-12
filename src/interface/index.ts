@@ -17,7 +17,7 @@ export interface matchRangeMy extends rangeMy {
     matchText: string,
     isCursor: boolean,
 
-    newContent(str: any): string,
+    newContent(str: any): { isJson: boolean, text: string },
 }
 
 export interface editContentMy extends rangeMy {
@@ -29,5 +29,4 @@ export interface editContentMy extends rangeMy {
     lastColumn: number,
     selectText: string,
     lineText: string,
-    baseCount: 0,
 }
