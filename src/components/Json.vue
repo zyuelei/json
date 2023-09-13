@@ -521,6 +521,16 @@ const getBase64Json = (str: string) => {
   try {
     return atob(str); // 尝试解码
   } catch (e) {
+    try {
+      if (str.indexOf('%') != -1) {
+        const decode = getUrlDecodeString(str)
+        if (decode) {
+          return atob(decode)
+        }
+      }
+    } catch (e) {
+
+    }
     throw e
   }
 }
