@@ -10,6 +10,7 @@ import {onBeforeUnmount, onMounted, ref} from "vue";
 import {reactive, toRefs, watchEffect} from "vue";
 import {config, editContentMy, rangeMy} from "../interface";
 import {IRange} from "monaco-editor";
+import IDimension = monaco.editor.IDimension;
 
 const editorDiv = ref();
 const editorInit = ref()
@@ -52,9 +53,9 @@ watchEffect(() => {
   }
 })
 
-const handleResize = () => {
+const resize = (dimension: IDimension) => {
   if (editor) {
-    editor.layout();
+    editor.layout(dimension);
   }
 };
 // const cursorLastPosition = ref({
@@ -91,7 +92,7 @@ const init = () => {
   //   console.log("c:", lineNumber, column);
   // });
 
-  window.addEventListener('resize', handleResize);
+  // window.addEventListener('resize', handleResize);
 }
 
 
@@ -194,12 +195,12 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize);
+  // window.removeEventListener('resize', handleResize);
   editor?.dispose();
   editorDiv.value = null;
   editor = null
 });
-defineExpose({setVal, focus, copy, insert, replace, toRange, getContentInfo})
+defineExpose({setVal, focus, copy, insert, replace, toRange, getContentInfo, resize})
 </script>
 
 <template>

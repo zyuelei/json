@@ -1,4 +1,4 @@
-<script setup lang="ts">import {reactive, ref, watch, watchEffect} from 'vue';
+<script setup lang="ts">import {nextTick, onBeforeUnmount, onMounted, reactive, ref, watch, watchEffect} from 'vue';
 import dayjs from 'dayjs'
 import BraceTemplate from "./BraceTemplate.vue";
 import MonacoTemplate from "./MonacoTemplate.vue";
@@ -14,6 +14,7 @@ const props = defineProps<{
 }>()
 const theme = ref(props.theme)
 const childElementRefs = ref([]);
+const tabsContainerRef = ref();
 // const useCodeTemplate = ref('brace')
 const useCodeTemplate = ref('moncaco')
 
@@ -296,7 +297,7 @@ const contentRefSetVal = (str: string) => {
 const contentRefSetFocus = () => {
   setTimeout(() => {
     getActiveEdit().focus()
-  }, 20)
+  }, 10)
 }
 const getSelectContentData = () => {
   let {selectInfo} = getContentCursorOrAll(ContentSelectType.select);
@@ -1131,6 +1132,44 @@ const handleConfigMenuClick = (clickInfo: any) => {
       break;
   }
 }
+
+const handleResize = () => {
+  nextTick(() => {
+    const dimension = {
+      height: 0,
+      width: 0,
+    };
+    tabsContainerRef.value.map((i: any) => {
+      if (i.offsetHeight > dimension.height) {
+        dimension.height = i.offsetHeight
+      }
+      if (i.offsetWidth > dimension.width) {
+        dimension.width = i.offsetWidth
+      }
+    })
+    panes.value.map((value) => {
+      // @ts-ignore
+      const child = childElementRefs.value[value.key].value[0]
+      child.resize && child.resize(dimension)
+    })
+  })
+};
+window.addEventListener('resize', handleResize);
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize);
+});
+
+// watchEffect(() => {
+//   if (!tabsContainerRef.value){
+//     return
+//   }
+// })
+
+onMounted(() => {
+  handleResize()
+});
+
 </script>
 
 <template>
@@ -1188,14 +1227,16 @@ const handleConfigMenuClick = (clickInfo: any) => {
       </template>
       <a-tab-pane v-for="pane in panes" :key="pane.key" :tab="pane.title" :closable="pane.closable || !pane.favorite"
                   style="height: 100%;width: 100%;">
+        <div ref="tabsContainerRef" style="height: 100%;height: 100%;overflow: hidden;">
 
-        <BraceTemplate v-if="useCodeTemplate == 'brace'" style="height: 100%;width: 100%;"
-                       :ref="getContentRef(pane.key)"
-                       :config="contentConfig"
-                       @onChange="onChange"></BraceTemplate>
-        <MonacoTemplate v-if="useCodeTemplate == 'moncaco'" style="height: 100%;width: 100%;"
-                        :ref="getContentRef(pane.key)" :config="contentConfig"
-                        @onChange="onChange"></MonacoTemplate>
+          <BraceTemplate v-if="useCodeTemplate == 'brace'" style="height: 100%;width: 100%;"
+                         :ref="getContentRef(pane.key)"
+                         :config="contentConfig"
+                         @onChange="onChange"></BraceTemplate>
+          <MonacoTemplate v-if="useCodeTemplate == 'moncaco'" style="height: 100%;width: 100%;"
+                          :ref="getContentRef(pane.key)" :config="contentConfig"
+                          @onChange="onChange"></MonacoTemplate>
+        </div>
       </a-tab-pane>
     </a-tabs>
 
@@ -1231,7 +1272,6 @@ const handleConfigMenuClick = (clickInfo: any) => {
   justify-content: center;
   align-content: center;
   flex-direction: column;
-
 }
 
 .tabs {
