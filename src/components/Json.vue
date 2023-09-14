@@ -35,7 +35,7 @@ window.onPluginEnter && window.onPluginEnter(({payload, type, code}: any) => {
   switch (code) {
     case "json_format":
       if (type !== 'regex') {
-        contentRefSetFocus()
+        contentRefSetFocus(50)
         return
       }
       activeKey.value = 0
@@ -56,7 +56,7 @@ window.onPluginEnter && window.onPluginEnter(({payload, type, code}: any) => {
       setValue(payload);
       break;
   }
-  contentRefSetFocus()
+  contentRefSetFocus(50)
 })
 
 //{\x22channel\x22:\x22CCPARTNER\x22,\x22member_id\x22:\x2213819765\x22,\x22company_id\x22:\x2254798\x22}
@@ -294,10 +294,11 @@ const contentRefSetVal = (str: string) => {
     getActiveEdit().setVal(str)
   }, 20)
 }
-const contentRefSetFocus = () => {
+const contentRefSetFocus = (timeout?: number) => {
+  timeout = timeout || 0
   setTimeout(() => {
     getActiveEdit().focus()
-  }, 10)
+  }, timeout)
 }
 const getSelectContentData = () => {
   let {selectInfo} = getContentCursorOrAll(ContentSelectType.select);
@@ -911,7 +912,7 @@ const onEdit = (targetKey: string | MouseEvent, action: string) => {
   } else {
     remove(targetKey as string);
   }
-  contentRefSetFocus();
+  contentRefSetFocus(50);
 };
 
 const onChange = ({content, format}: any) => {
@@ -925,7 +926,7 @@ const onChange = ({content, format}: any) => {
 
 watch(activeKey, () => {
   // setValue(getActive()?.content, false)
-  contentRefSetFocus();
+  contentRefSetFocus(50);
 })
 const windowCopy = (text: string) => {
   // @ts-ignore
@@ -1104,7 +1105,7 @@ const handleTabMenuClick = (clickInfo: any) => {
       })
       break;
   }
-  contentRefSetFocus()
+  contentRefSetFocus(20)
 }
 
 const handleConfigMenuClick = (clickInfo: any) => {
