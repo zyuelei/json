@@ -1422,7 +1422,7 @@ onMounted(() => {
       </template>
       <a-tab-pane v-for="pane in panes" :key="pane.key" :tab="pane.title" :closable="pane.closable || !pane.favorite"
                   style="height: 100%;width: 100%;">
-        <div ref="tabsContainerRef" style="height: 100%; width: 100%;overflow: hidden;">
+        <div ref="tabsContainerRef" style="height: 100%; width: 100%;">
           <BraceTemplate v-if="pane.render == supportEditTemplateType.brace"
                          ref="childElementRefs"
                          :config="contentConfig"

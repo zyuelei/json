@@ -99,6 +99,7 @@ const setVal = (str: string) => {
 }
 const focus = () => {
   editor.value.focus()
+  editor.value.resize()
 }
 // const copy = () => {
 //
@@ -204,6 +205,9 @@ const getContentInfo = (): editContentMy => {
     firstColumn: 1,
   }
 }
+const resize = () => {
+  // editor.value && editor.value.resize(1)
+}
 onMounted(() => {
   showEdit(editorDiv.value)
 });
@@ -212,7 +216,7 @@ onBeforeUnmount(() => {
   editorDiv.value = null;
   editor.value = null
 });
-defineExpose({setVal, focus, insert, replace, toRange, getContentInfo})
+defineExpose({setVal, focus, insert, replace, toRange, getContentInfo, resize})
 </script>
 
 <template>
