@@ -29,11 +29,19 @@ window.onPluginEnter = (callback) => {
     })
 }
 
+window.isDark = (callback) => {
+    return toolsFun(() => {
+        return utools.isDarkColors()
+    }, () => {
+        return window.matchMedia("(prefers-color-scheme: dark)").matches
+    })
+}
+
 const toolsFun = (callback, errCallback) => {
     if (typeof utools != 'undefined') {
         return callback();
     } else {
-        errCallback && errCallback()
+        return errCallback && errCallback()
     }
 }
 

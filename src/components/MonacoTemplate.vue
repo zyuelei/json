@@ -204,11 +204,22 @@ defineExpose({setVal, focus, copy, insert, replace, toRange, getContentInfo, res
 </script>
 
 <template>
-  <div ref="editorDiv" style="width: 100%;height: 100%;min-height: 100px"></div>
+  <div class="monacoContainer">
+    <div ref="editorDiv"></div>
+  </div>
 
 </template>
 
 <style scoped>
-.ace_dark {
+.monacoContainer {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  width: 100%;
+}
+
+.monacoContainer div {
+  height: 100%;
+  width: 100%;
 }
 </style>

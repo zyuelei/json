@@ -194,6 +194,9 @@ const utf8String = (str: string) => {
 const getJsonStr = (str: string) => {
   try {
     const json = JSON.parse(str)
+    if (typeof json !== 'object'){
+      throw Error('错误');
+    }
     str = jsonFormat(getEscapeJson(json))
   } catch (e) {
     // console.info('json err', str)
@@ -381,7 +384,6 @@ const findLineQuotesInfo = (contentInfo: editContentMy): matchRangeMy | null => 
       oldText: str,
       isCursor: true,
       newContent: function (str) {
-        debugger
         const jsonStr = isJson(str);
         if (jsonStr) {
           return {
@@ -1151,6 +1153,8 @@ const handleResize = () => {
     panes.value.map((value) => {
       // @ts-ignore
       const child = childElementRefs.value[value.key].value[0]
+      child.$el.style.height = dimension.height + 'px'
+      child.$el.style.width = dimension.width + 'px'
       child.resize && child.resize(dimension)
     })
   })
@@ -1228,35 +1232,37 @@ onMounted(() => {
       </template>
       <a-tab-pane v-for="pane in panes" :key="pane.key" :tab="pane.title" :closable="pane.closable || !pane.favorite"
                   style="height: 100%;width: 100%;">
-        <div ref="tabsContainerRef" style="height: 100%;height: 100%;overflow: hidden;">
-
-          <BraceTemplate v-if="useCodeTemplate == 'brace'" style="height: 100%;width: 100%;"
+        <div ref="tabsContainerRef" style="height: 100%; width: 100%;overflow: hidden;">
+          <BraceTemplate v-if="useCodeTemplate == 'brace'"
                          :ref="getContentRef(pane.key)"
                          :config="contentConfig"
                          @onChange="onChange"></BraceTemplate>
-          <MonacoTemplate v-if="useCodeTemplate == 'moncaco'" style="height: 100%;width: 100%;"
+          <MonacoTemplate v-if="useCodeTemplate == 'moncaco'"
                           :ref="getContentRef(pane.key)" :config="contentConfig"
                           @onChange="onChange"></MonacoTemplate>
         </div>
       </a-tab-pane>
     </a-tabs>
 
-    <a-space :size="4" style="justify-content: end;margin-bottom: 2px;margin-right: 14px">
-      <a-button @click="format">格式化</a-button>
-      <a-button @click="pasteOnly">仅粘贴</a-button>
-      <!--      <a-button @click="paste">粘贴</a-button>-->
-      <!--      <a-button @click="copy">复制</a-button>-->
-      <a-button @click="archiveCopy">复制压缩</a-button>
-      <a-button @click="formDataCopy">复制form</a-button>
-      <!--      <a-button @click="escape">去除转义</a-button>-->
-      <!--      <a-button @click="escapeCursor">光标处去转义</a-button>-->
-      <!--      <a-button @click="showModal">历史</a-button>-->
-      <a-button @click="getDecode">get参数</a-button>
-      <a-button @click="urlDecode">url_decode</a-button>
-      <a-button @click="base64Decode">base64_decode</a-button>
-      <a-button @click="unserializeDecode">unserialize</a-button>
-      <a-button @click="timestampDecode">timestamp</a-button>
+    <a-space :size="4" style="justify-content:end;margin: 2px 14px 2px 14px;">
 
+      <div>
+        <a-button @click="format">格式化</a-button>
+        <a-button @click="pasteOnly">仅粘贴</a-button>
+        <!--      <a-button @click="paste">粘贴</a-button>-->
+        <!--      <a-button @click="copy">复制</a-button>-->
+        <a-button @click="archiveCopy">复制压缩</a-button>
+        <a-button @click="formDataCopy">复制form</a-button>
+        <!--      <a-button @click="escape">去除转义</a-button>-->
+        <!--      <a-button @click="escapeCursor">光标处去转义</a-button>-->
+        <!--      <a-button @click="showModal">历史</a-button>-->
+        <a-button @click="getDecode">get参数</a-button>
+        <a-button @click="urlDecode">url_decode</a-button>
+        <a-button @click="base64Decode">base64_decode</a-button>
+        <a-button @click="unserializeDecode">unserialize</a-button>
+        <a-button @click="timestampDecode">timestamp</a-button>
+
+      </div>
 
     </a-space>
 

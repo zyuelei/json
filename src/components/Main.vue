@@ -11,19 +11,19 @@ const toggleTheme = (themeNew: any) => {
 };
 
 const showSon = ref(false)
+
+// @ts-ignore
+if (window.isDark && window.isDark()) {
+  toggleTheme('dark')
+} else {
+  toggleTheme('light')
+}
 // @ts-ignore
 if (typeof utools != 'undefined') {
 // @ts-ignore
   utools.onPluginReady(() => {
     showSon.value = true;
-// @ts-ignore
-    if (utools.isDarkColors()) {
-      toggleTheme('dark')
-    } else {
-      toggleTheme('light')
-    }
   })
-
 } else {
   // toggleTheme('dark')
   showSon.value = true;
