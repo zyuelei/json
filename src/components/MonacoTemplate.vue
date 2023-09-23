@@ -167,6 +167,7 @@ const toRange = ({startLine, endLine, startColumn, endColumn}: rangeMy) => {
   }
 }
 const replace = (range: IRange, newText: string) => {
+  editor.pushUndoStop()
   editor.getModel().pushEditOperations(
       [],
       [{
@@ -175,6 +176,7 @@ const replace = (range: IRange, newText: string) => {
         forceMoveMarkers: true
       }]
   );
+  editor.pushUndoStop()
   editor.setScrollPosition({scrollLeft: 0});
 }
 

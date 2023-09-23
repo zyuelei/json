@@ -1193,6 +1193,7 @@ const handleConfigMenuClick = (clickInfo: any) => {
         "格式化：在一些需要二次格式化的时候(如：[get]后)可手动调用 快捷键：ctrl + center",
         "新建tab：ctrl + shift + t",
         "新建tab并粘贴格式化：ctrl + shift + n",
+        "新建tab并粘贴光标处内容格式化：ctrl + shift + m",
         "切换tab：ctrl + tab  /  ctrl + shift + tab",
         "关闭tab：ctrl + shift + q  /  ctrl + shift + w",
         "锁定/解锁tab：锁定后无法通过[关闭tab]快捷键关闭当前tab 快捷键：ctrl + shift + l",
@@ -1332,8 +1333,13 @@ const handleKeyDown = (e: KeyboardEvent) => {
       pasteOnly()
       e.preventDefault()
       break;
+    case 'm':
+      let {selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
+      format(selectInfo.matchText)
+      add()
+      e.preventDefault()
+      break;
   }
-
 }
 
 const handleKeyUp = () => {
@@ -1487,10 +1493,12 @@ onMounted(() => {
 }
 
 .operateBtnSmall {
+  margin-left: 2px;
   width: 70px;
 }
 
 .operateBtn {
+  margin-left: 2px;
   width: 90px;
 }
 </style>
