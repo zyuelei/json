@@ -1,5 +1,6 @@
 <script setup lang="ts">import {
   computed,
+  h,
   nextTick,
   onBeforeUnmount,
   onMounted,
@@ -11,12 +12,21 @@
 import dayjs from 'dayjs'
 import BraceTemplate from "./BraceTemplate.vue";
 import MonacoTemplate from "./MonacoTemplate.vue";
+import PrettyTemplate from "./PrettyTemplate.vue";
 import utf8 from "utf8";
-import {config, ContentSelectType, editContentMy, matchRangeMy, rangeMy, supportAutoType} from "../interface";
+import {
+  config,
+  ContentSelectType,
+  editContentMy, getNextEnumValue,
+  matchRangeMy,
+  panesInterface,
+  rangeMy,
+  supportAutoType,
+  supportEditTemplateType
+} from "../interface";
 import {DownOutlined, LockOutlined, SettingOutlined, UnlockOutlined} from '@ant-design/icons-vue';
 import {unserialize} from 'serialize-php';
 import {message, Modal} from 'ant-design-vue';
-import {h} from 'vue';
 
 const emit = defineEmits(['changeTheme'])
 const props = defineProps<{
@@ -32,7 +42,7 @@ const contentConfig = reactive<config>({
   printMargin: false,
   useWrap: false,
   theme: theme.value,
-  render: 'moncaco', // brace  moncaco
+  render: supportEditTemplateType.monaco, // brace  moncaco
 })
 watchEffect(() => {
   contentConfig.theme = theme.value
@@ -67,17 +77,6 @@ window.onPluginEnter && window.onPluginEnter(({payload, type, code}: any) => {
   }
   contentRefSetFocus(50)
 })
-
-//{\x22channel\x22:\x22CCPARTNER\x22,\x22member_id\x22:\x2213819765\x22,\x22company_id\x22:\x2254798\x22}
-interface panesInterface {
-  title: string
-  key: number
-  closable?: boolean
-  content: string
-  favorite?: boolean
-  time: number,
-  render: string
-}
 
 const panes = ref<panesInterface[]>([
   {title: 'default', key: 0, closable: false, favorite: true, content: '', time: 0, render: contentConfig.render},
@@ -1172,11 +1171,7 @@ const handleConfigMenuClick = (clickInfo: any) => {
         message.error('有数据无法切换');
         return
       }
-      const nextCodeTemplete: any = {
-        brace: 'moncaco',
-        moncaco: 'brace'
-      };
-      const newRender = nextCodeTemplete[getActive().render]
+      const newRender = getNextEnumValue(supportEditTemplateType, getActive().render)
       getActive().render = newRender
       contentConfig.render = newRender
       break;
@@ -1360,6 +1355,7 @@ onBeforeUnmount(() => {
 });
 
 onMounted(() => {
+  handleResize()
   window.addEventListener('resize', handleResize);
   window.addEventListener('keyup', handleKeyUp)
   window.addEventListener('keydown', handleKeyDown)
@@ -1427,11 +1423,11 @@ onMounted(() => {
       <a-tab-pane v-for="pane in panes" :key="pane.key" :tab="pane.title" :closable="pane.closable || !pane.favorite"
                   style="height: 100%;width: 100%;">
         <div ref="tabsContainerRef" style="height: 100%; width: 100%;overflow: hidden;">
-          <BraceTemplate v-if="pane.render == 'brace'"
+          <BraceTemplate v-if="pane.render == supportEditTemplateType.brace"
                          ref="childElementRefs"
                          :config="contentConfig"
                          @onChange="onChange"></BraceTemplate>
-          <MonacoTemplate v-if="pane.render == 'moncaco'"
+          <MonacoTemplate v-if="pane.render == supportEditTemplateType.monaco"
                           ref="childElementRefs" :config="contentConfig"
                           @onChange="onChange"></MonacoTemplate>
         </div>

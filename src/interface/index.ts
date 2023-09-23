@@ -1,10 +1,22 @@
+export enum supportEditTemplateType {
+    brace,
+    monaco,
+}
+
+export enum supportAutoType {
+    get_param,
+    utf8,
+    unicode,
+    unserialize
+}
+
 export interface config {
     tabSize?: number
     fontSize?: number
     useWrap?: boolean
     printMargin?: boolean
     theme?: string
-    render: string,
+    render: supportEditTemplateType,
 }
 
 export interface rangeMy {
@@ -37,9 +49,26 @@ export enum ContentSelectType {
     select,
 }
 
-export enum supportAutoType {
-    'get_param',
-    'utf8',
-    'unicode',
-    'unserialize'
+export interface panesInterface {
+    title: string,
+    key: number,
+    closable?: boolean,
+    content: string,
+    favorite?: boolean,
+    time: number,
+    render: supportEditTemplateType,
 }
+
+
+export function getNextEnumValue<T extends Record<string, string | number>>(enumType: T, currentEnum: number): T[keyof T] {
+    const enumValues = (Object.values(enumType).filter(value => typeof value === 'number') as unknown) as Array<T[keyof T]>;
+    const index = enumValues.indexOf(currentEnum as unknown as T[keyof T]);
+    // 如果没有找到对应的枚举值或者当前枚举值是最后一个，则返回第一个枚举值
+    if (index === -1 || index === enumValues.length - 1) {
+        return enumValues[0];
+    } else {
+        // 否则返回下一个枚举值
+        return enumValues[index + 1];
+    }
+}
+
