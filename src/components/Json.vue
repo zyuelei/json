@@ -1207,6 +1207,7 @@ const handleConfigMenuClick = (clickInfo: any) => {
         "复制压缩：在【全局/选中处】复制去除回车、空格后的压缩数据 快捷键：alt + 8",
         "复制form：在【全局/选中处】复制key:value格式的json数据，用于postman等软件的导入 快捷键：alt + 9",
         "仅粘贴：在【全局/选中处】粘贴，并不做格式化操作 快捷键：alt + 0",
+        "注释：【全局】指当前tab内所有内容，【光标处】指被双引号包裹的字符串，【选中处】指选中的内容"
       ];
 
       let content = h('div',
@@ -1449,7 +1450,7 @@ onMounted(() => {
         <div>
           <a-button class="operateBtnSmall" @click="getDecode">{{ showAltAlert ? '1' : '' }} get</a-button>
           <a-button class="operateBtnSmall" @click="urlDecode">{{ showAltAlert ? '2' : '' }} url</a-button>
-          <a-button class="operateBtnSmall" @click="base64Decode">{{ showAltAlert ? '3' : '' }} base64</a-button>
+          <a-button class="operateBtn" @click="base64Decode">{{ showAltAlert ? '3' : '' }} base64</a-button>
           <a-button class="operateBtn" @click="unserializeDecode">{{ showAltAlert ? '4' : '' }} serialize</a-button>
           <a-button class="operateBtn" @click="timestampDecode">{{ showAltAlert ? '5' : '' }} timestamp</a-button>
           <a-button class="operateBtn" @click="unicodeDecode">{{ showAltAlert ? '6' : '' }} unicode</a-button>
@@ -1501,11 +1502,11 @@ onMounted(() => {
 
 .operateBtnSmall {
   margin-left: 2px;
-  width: 70px;
+  width: 64px;
 }
 
 .operateBtn {
   margin-left: 2px;
-  width: 90px;
+  width: 84px;
 }
 </style>
