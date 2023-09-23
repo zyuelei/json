@@ -1,9 +1,18 @@
-<script setup lang="ts">import {nextTick, onBeforeUnmount, onMounted, reactive, ref, watch, watchEffect} from 'vue';
+<script setup lang="ts">import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+  watchEffect
+} from 'vue';
 import dayjs from 'dayjs'
 import BraceTemplate from "./BraceTemplate.vue";
 import MonacoTemplate from "./MonacoTemplate.vue";
 import utf8 from "utf8";
-import {config, ContentSelectType, editContentMy, matchRangeMy, rangeMy} from "../interface";
+import {config, ContentSelectType, editContentMy, matchRangeMy, rangeMy, supportAutoType} from "../interface";
 import {DownOutlined, LockOutlined, SettingOutlined, UnlockOutlined} from '@ant-design/icons-vue';
 import {unserialize} from 'serialize-php';
 import {message} from 'ant-design-vue';
@@ -13,18 +22,15 @@ const props = defineProps<{
   theme: string
 }>()
 const theme = ref(props.theme)
-const childElementRefs = ref([]);
+const childElementRefs = ref();
 const tabsContainerRef = ref();
-// const useCodeTemplate = ref('brace')
-const useCodeTemplate = ref('moncaco')
-
 const contentConfig = reactive<config>({
   fontSize: 14,
   tabSize: 4,
   printMargin: false,
   useWrap: false,
   theme: theme.value,
-  render: 'moncaco',
+  render: 'moncaco', // brace  moncaco
 })
 watchEffect(() => {
   contentConfig.theme = theme.value
@@ -75,6 +81,9 @@ const panes = ref<panesInterface[]>([
   {title: 'default', key: 0, closable: false, favorite: true, content: '', time: 0, render: contentConfig.render},
 ]);
 const activeKey = ref(panes.value[0].key);
+const activeIndex = computed(() => {
+  return panes.value.findIndex(obj => obj.key === activeKey.value)
+})
 
 const saveActiveValue = (str: string) => {
   getActive().content = str
@@ -270,14 +279,7 @@ const jsonArchive = (str: string) => {
 }
 
 const escapeString = (text: string) => {
-  return text.replace(/\\\\/g, "\\").replace(/\\\"/g, '"')
-}
-
-enum supportAutoType {
-  'get_param',
-  'utf8',
-  'unicode',
-  'unserialize'
+  return text.replace(/\\\\/g, "\\").replace(/\\"/g, '"')
 }
 
 type formatParam = {
@@ -291,7 +293,7 @@ const setValue = (str?: string, formatParam?: formatParam) => {
   contentRefSetVal(str)
 }
 const getActiveEdit = (): any => {
-  return getContentRef(activeKey.value).value[0]
+  return childElementRefs.value[activeIndex.value]
 }
 
 const contentRefSetVal = (str: string) => {
@@ -314,13 +316,6 @@ const contentRefInsert = (text: string) => {
   return getActiveEdit().insert(text)
 }
 
-const getContentRef = (index: number): any => {
-  if (!childElementRefs.value[index]) {
-    // @ts-ignore
-    childElementRefs.value[index] = ref();
-  }
-  return childElementRefs.value[index];
-}
 
 const findLineSelectInfo = (contentInfo: editContentMy): matchRangeMy | null => {
   const str = getSubstringByRange(getActive().content, contentInfo)
@@ -897,9 +892,6 @@ const remove = (targetKeyStr: string) => {
       activeKey.value = panes.value[0].key;
     }
   }
-
-  childElementRefs.value = childElementRefs.value.filter(pane => pane !== targetKey);
-
 };
 const getActive = (targetKeyStr?: string | number): any => {
   if (targetKeyStr === undefined) {
@@ -1148,21 +1140,12 @@ const handleConfigMenuClick = (clickInfo: any) => {
 
 const handleResize = () => {
   nextTick(() => {
+    const activeTab = tabsContainerRef.value[activeIndex.value]
     const dimension = {
-      height: 0,
-      width: 0,
+      height: activeTab.offsetHeight,
+      width: activeTab.offsetWidth,
     };
-    tabsContainerRef.value.map((i: any) => {
-      if (i.offsetHeight > dimension.height) {
-        dimension.height = i.offsetHeight
-      }
-      if (i.offsetWidth > dimension.width) {
-        dimension.width = i.offsetWidth
-      }
-    })
-    panes.value.map((value) => {
-      // @ts-ignore
-      const child = childElementRefs.value[value.key].value[0]
+    childElementRefs.value.map((child: any) => {
       child.$el.style.height = dimension.height + 'px'
       child.$el.style.width = dimension.width + 'px'
       child.resize && child.resize(dimension)
@@ -1174,12 +1157,6 @@ window.addEventListener('resize', handleResize);
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
 });
-
-// watchEffect(() => {
-//   if (!tabsContainerRef.value){
-//     return
-//   }
-// })
 
 onMounted(() => {
   handleResize()
@@ -1244,11 +1221,11 @@ onMounted(() => {
                   style="height: 100%;width: 100%;">
         <div ref="tabsContainerRef" style="height: 100%; width: 100%;overflow: hidden;">
           <BraceTemplate v-if="pane.render == 'brace'"
-                         :ref="getContentRef(pane.key)"
+                         ref="childElementRefs"
                          :config="contentConfig"
                          @onChange="onChange"></BraceTemplate>
           <MonacoTemplate v-if="pane.render == 'moncaco'"
-                          :ref="getContentRef(pane.key)" :config="contentConfig"
+                          ref="childElementRefs" :config="contentConfig"
                           @onChange="onChange"></MonacoTemplate>
         </div>
       </a-tab-pane>
