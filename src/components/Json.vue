@@ -15,7 +15,8 @@ import utf8 from "utf8";
 import {config, ContentSelectType, editContentMy, matchRangeMy, rangeMy, supportAutoType} from "../interface";
 import {DownOutlined, LockOutlined, SettingOutlined, UnlockOutlined} from '@ant-design/icons-vue';
 import {unserialize} from 'serialize-php';
-import {message} from 'ant-design-vue';
+import {message, Modal} from 'ant-design-vue';
+import {h} from 'vue';
 
 const emit = defineEmits(['changeTheme'])
 const props = defineProps<{
@@ -1148,6 +1149,37 @@ const handleConfigMenuClick = (clickInfo: any) => {
       }
       theme.value = nextTheme[theme.value]
       break;
+    case 'useDesc':
+      const instructions = [
+        "默认行为：粘贴自动格式化json，支持转义字符(如：\\x22)、unicode字符、utf8字符的转码自动格式化 快捷键：ctrl + v",
+        "格式化：在一些需要二次格式化的时候(如：[get_path]后)可手动调用 快捷键：ctrl + center",
+        "新建tab：ctrl + shift + t",
+        "新建tab并粘贴格式化：ctrl + shift + n",
+        "切换tab：ctrl + tab  /  ctrl + shift + tab",
+        "关闭tab：ctrl + shift + q  /  ctrl + shift + w",
+        "锁定/解锁tab：锁定后无法通过[关闭tab]快捷键关闭当前tab 快捷键：ctrl + shift + l",
+        "get_path：在【全局/光标处】解析get参数，并尝试转为json 示例：a=1&b=1 快捷键：alt + 1",
+        "url_de：在【全局/光标处】url_decode，并尝试转为json 示例：%7B%22a%22%3A%221%22%7D 快捷键：alt + 2",
+        "base64_de：在【全局/光标处】进行url_decode及base64_decode，并尝试转为json。 示例：eyJhIjoiMSJ9 快捷键：alt + 3",
+        "unserialize：在【全局/光标处】进行unserialize，并尝试转为json 快捷键：alt + 4",
+        "timestamp：在【全局/光标处】进行【10位时间戳/y-m-d H:i:s】格式的转换,若无法转换则会插入当前时间的10位时间戳 快捷键：alt + 5",
+        "复制压缩：在【全局/选中处】复制去除回车、空格后的压缩数据 快捷键：alt + 8",
+        "复制form：在【全局/选中处】复制key:value格式的json数据，用于postman等软件的导入 快捷键：alt + 9",
+        "仅粘贴：在【全局/选中处】粘贴，并不做格式化操作 快捷键：alt + 0",
+      ];
+
+      let content = h('div',
+          instructions.map(instruction => h('p', instruction))
+      );
+
+      Modal.info({
+        width: '100%',
+        title: '使用说明',
+        wrapClassName: 'useDescContainer',
+        content: content,
+      });
+
+      break
   }
 }
 
@@ -1215,6 +1247,10 @@ const handleKeyDown = (e: KeyboardEvent) => {
       favorite()
       e.preventDefault()
       break;
+    case 'enter':
+      format()
+      e.preventDefault()
+      break;
     case '0':
       pasteOnly()
       e.preventDefault()
@@ -1239,6 +1275,14 @@ const handleKeyDown = (e: KeyboardEvent) => {
       timestampDecode()
       e.preventDefault()
       break;
+    case '8':
+      archiveCopy()
+      e.preventDefault()
+      break;
+    case '9':
+      formDataCopy()
+      e.preventDefault()
+      break;
   }
 
 }
@@ -1256,6 +1300,7 @@ onMounted(() => {
   window.addEventListener('resize', handleResize);
   window.addEventListener('keyup', handleKeyUp)
   window.addEventListener('keydown', handleKeyDown)
+  // tabindex="0" @keydown="handleKeyDown" @keyup="handleKeyUp"
 });
 
 </script>
@@ -1299,6 +1344,9 @@ onMounted(() => {
           </a-button>
           <template #overlay>
             <a-menu @click="handleConfigMenuClick">
+              <a-menu-item style="width: 100px" key="useDesc">
+                使用说明
+              </a-menu-item>
               <a-menu-item style="width: 100px" key="useWrap">
                 切换换行
               </a-menu-item>
@@ -1327,30 +1375,32 @@ onMounted(() => {
       </a-tab-pane>
     </a-tabs>
 
-    <a-space :size="4" style="justify-content:end;margin: 2px 14px 2px 14px;">
+    <a-space :size="4" style="width:100%;justify-content:end;padding: 2px 14px 2px 14px;">
 
-      <div>
-<!--        <a-button @click="format()">格式化</a-button>-->
+      <div style="width:100%;display: flex;flex-direction: row;justify-content: space-between">
+        <!--        <a-button @click="format()">格式化</a-button>-->
         <!--      <a-button @click="paste">粘贴</a-button>-->
         <!--      <a-button @click="copy">复制</a-button>-->
-        <a-button @click="archiveCopy">复制压缩</a-button>
-        <a-button @click="formDataCopy">复制form</a-button>
-        <a-button @click="pasteOnly">仅粘贴 {{ showAlt ? '0' : '' }}</a-button>
         <!--      <a-button @click="escape">去除转义</a-button>-->
         <!--      <a-button @click="escapeCursor">光标处去转义</a-button>-->
         <!--      <a-button @click="showModal">历史</a-button>-->
-        <a-button @click="getDecode">get参数 {{ showAlt ? '1' : '' }}</a-button>
-        <a-button @click="urlDecode">url_decode {{ showAlt ? '2' : '' }}</a-button>
-        <a-button @click="base64Decode">base64_decode {{ showAlt ? '3' : '' }}</a-button>
-        <a-button @click="unserializeDecode">unserialize {{ showAlt ? '4' : '' }}</a-button>
-        <a-button @click="timestampDecode">timestamp {{ showAlt ? '5' : '' }}</a-button>
 
+        <div>
+          <a-button class="operateBtn" @click="archiveCopy">{{ showAlt ? '8' : '' }}复制压缩</a-button>
+          <a-button class="operateBtn" @click="formDataCopy">{{ showAlt ? '9' : '' }}复制form</a-button>
+          <a-button class="operateBtn" @click="pasteOnly"> {{ showAlt ? '0' : '' }}仅粘贴</a-button>
+        </div>
+
+        <div>
+          <a-button class="operateBtn" @click="getDecode">{{ showAlt ? '1' : '' }}get_path</a-button>
+          <a-button class="operateBtn" @click="urlDecode">{{ showAlt ? '2' : '' }}url_de</a-button>
+          <a-button class="operateBtn" @click="base64Decode">{{ showAlt ? '3' : '' }}base64_de</a-button>
+          <a-button class="operateBtn" @click="unserializeDecode">{{ showAlt ? '4' : '' }}unserialize</a-button>
+          <a-button class="operateBtn" @click="timestampDecode">{{ showAlt ? '5' : '' }}timestamp</a-button>
+        </div>
       </div>
 
     </a-space>
-
-    <div>
-    </div>
   </div>
 </template>
 
@@ -1369,11 +1419,9 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/*:deep(.ant-space-item) {
-  margin-bottom: 0 !important;
-  padding-bottom: 0 !important;
-  //margin-right: 4px !important;
-}*/
+:deep(.ant-space-item) {
+  width: 100%;
+}
 
 :deep(.ant-tabs-content) {
   height: 100%;
@@ -1389,5 +1437,9 @@ onMounted(() => {
 
 .dark {
   background: #303133;
+}
+
+.operateBtn {
+  width: 90px;
 }
 </style>

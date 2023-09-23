@@ -31,3 +31,25 @@ html,body {
     width: 100%;
     height: 100%;
 }
+
+
+
+.useDescContainer .ant-modal {
+    max-width: 100%;
+    top: 0;
+    padding-bottom: 0;
+    margin: 0;
+}
+
+.useDescContainer .ant-modal-content {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh);
+}
+
+.useDescContainer .ant-modal-body {
+    flex: 1;
+}
+.useDescContainer .ant-modal-confirm-content {
+    line-height: 12px;
+}
