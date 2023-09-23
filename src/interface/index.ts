@@ -4,6 +4,7 @@ export interface config {
     useWrap?: boolean
     printMargin?: boolean
     theme?: string
+    render: string,
 }
 
 export interface rangeMy {
@@ -34,4 +35,11 @@ export enum ContentSelectType {
     line_number,
     line_quotes,
     select,
+}
+
+export enum supportAutoType {
+    'get_param',
+    'utf8',
+    'unicode',
+    'unserialize'
 }
