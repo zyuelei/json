@@ -24,6 +24,7 @@ const props = defineProps<{
 const theme = ref(props.theme)
 const childElementRefs = ref();
 const tabsContainerRef = ref();
+const showAlt = ref(false)
 const contentConfig = reactive<config>({
   fontSize: 14,
   tabSize: 4,
@@ -939,9 +940,9 @@ const windowCopy = (text: string) => {
   window.copyContent && window.copyContent(text)
 }
 
-const format = () => {
-  const text = getSelectContentData()
-  setValue(text)
+const format = (text ?: string) => {
+  const formatText = text ? text : getSelectContentData()
+  setValue(formatText)
   contentRefSetFocus()
 }
 // const copy = () => {
@@ -1027,6 +1028,14 @@ const pasteOnly = () => {
   // @ts-ignore
   window.getClipboardContent && window.getClipboardContent((text: string) => {
     contentRefInsert(text)
+    contentRefSetFocus()
+  }, () => {
+  })
+}
+const pasteAndFormat = () => {
+  // @ts-ignore
+  window.getClipboardContent && window.getClipboardContent((text: string) => {
+    format(text)
     contentRefSetFocus()
   }, () => {
   })
@@ -1157,43 +1166,96 @@ const handleResize = () => {
   })
 };
 
-const switchTab = (e: KeyboardEvent) => {
-  console.info(e)
+const handleKeyDown = (e: KeyboardEvent) => {
   const key = e.key.toLowerCase()
-  if ((e.ctrlKey || e.altKey) && key === 'tab') {
-    let nextKey;
-    if (e.shiftKey) {
-      nextKey = activeIndex.value - 1;
-      if (nextKey < 0) nextKey = panes.value.length - 1;
-    } else {
-      nextKey = activeIndex.value + 1;
-      if (nextKey >= panes.value.length) nextKey = 0;
-    }
-    activeKey.value = panes.value[nextKey].key;
+  if (!(e.ctrlKey || e.altKey || e.metaKey)) {
     return;
+  }
+  switch (key) {
+    case 'control':
+    case 'meta':
+    case 'alt':
+      showAlt.value = true;
+      break;
+    case 'tab':
+      let nextKey;
+      if (e.shiftKey) {
+        nextKey = activeIndex.value - 1;
+        if (nextKey < 0) nextKey = panes.value.length - 1;
+      } else {
+        nextKey = activeIndex.value + 1;
+        if (nextKey >= panes.value.length) nextKey = 0;
+      }
+      activeKey.value = panes.value[nextKey].key;
+      e.preventDefault()
+      break;
+    case 'w':
+    case 'q':
+      if (activeKey.value == 0 || getActive().favorite) {
+        return
+      }
+      remove(activeKey.value.toString())
+      e.preventDefault()
+      break;
+    case 'n':
+      add()
+      setTimeout(() => {
+        pasteAndFormat()
+      }, 30)
+      e.preventDefault()
+      break;
+    case 't':
+      add()
+      e.preventDefault()
+      break;
+    case 'l':
+      if (activeKey.value == 0) {
+        return
+      }
+      favorite()
+      e.preventDefault()
+      break;
+    case '0':
+      pasteOnly()
+      e.preventDefault()
+      break;
+    case '1':
+      getDecode()
+      e.preventDefault()
+      break;
+    case '2':
+      urlDecode()
+      e.preventDefault()
+      break;
+    case '3':
+      base64Decode()
+      e.preventDefault()
+      break;
+    case '4':
+      unserializeDecode()
+      e.preventDefault()
+      break;
+    case '5':
+      timestampDecode()
+      e.preventDefault()
+      break;
   }
 
-  if ((e.ctrlKey || e.altKey) && key === 'w') {
-    if (activeKey.value != 0 && !getActive().favorite) {
-      remove(activeKey.value.toString())
-      return;
-    }
-  }
-  if ((e.ctrlKey || e.altKey) && (key === 't' || key === 'n')) {
-    add()
-    return;
-  }
-  if ((e.ctrlKey || e.altKey) && (key === 'enter')) {
-    format()
-  }
+}
+
+const handleKeyUp = () => {
+  showAlt.value = false
 }
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
+  window.removeEventListener('keydown', handleKeyDown)
+  window.removeEventListener('keyup', handleKeyUp)
 });
 
 onMounted(() => {
   window.addEventListener('resize', handleResize);
-  window.addEventListener('keydown', switchTab)
+  window.addEventListener('keyup', handleKeyUp)
+  window.addEventListener('keydown', handleKeyDown)
 });
 
 </script>
@@ -1268,20 +1330,20 @@ onMounted(() => {
     <a-space :size="4" style="justify-content:end;margin: 2px 14px 2px 14px;">
 
       <div>
-        <a-button @click="format">格式化</a-button>
-        <a-button @click="pasteOnly">仅粘贴</a-button>
+<!--        <a-button @click="format()">格式化</a-button>-->
         <!--      <a-button @click="paste">粘贴</a-button>-->
         <!--      <a-button @click="copy">复制</a-button>-->
         <a-button @click="archiveCopy">复制压缩</a-button>
         <a-button @click="formDataCopy">复制form</a-button>
+        <a-button @click="pasteOnly">仅粘贴 {{ showAlt ? '0' : '' }}</a-button>
         <!--      <a-button @click="escape">去除转义</a-button>-->
         <!--      <a-button @click="escapeCursor">光标处去转义</a-button>-->
         <!--      <a-button @click="showModal">历史</a-button>-->
-        <a-button @click="getDecode">get参数</a-button>
-        <a-button @click="urlDecode">url_decode</a-button>
-        <a-button @click="base64Decode">base64_decode</a-button>
-        <a-button @click="unserializeDecode">unserialize</a-button>
-        <a-button @click="timestampDecode">timestamp</a-button>
+        <a-button @click="getDecode">get参数 {{ showAlt ? '1' : '' }}</a-button>
+        <a-button @click="urlDecode">url_decode {{ showAlt ? '2' : '' }}</a-button>
+        <a-button @click="base64Decode">base64_decode {{ showAlt ? '3' : '' }}</a-button>
+        <a-button @click="unserializeDecode">unserialize {{ showAlt ? '4' : '' }}</a-button>
+        <a-button @click="timestampDecode">timestamp {{ showAlt ? '5' : '' }}</a-button>
 
       </div>
 
