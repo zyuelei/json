@@ -23,7 +23,8 @@ const contentConfig = reactive<config>({
   tabSize: 4,
   printMargin: false,
   useWrap: false,
-  theme: theme.value
+  theme: theme.value,
+  render: 'moncaco',
 })
 watchEffect(() => {
   contentConfig.theme = theme.value
@@ -66,11 +67,12 @@ interface panesInterface {
   closable?: boolean
   content: string
   favorite?: boolean
-  time: number
+  time: number,
+  render: string
 }
 
 const panes = ref<panesInterface[]>([
-  {title: 'default', key: 0, closable: false, favorite: true, content: '', time: 0},
+  {title: 'default', key: 0, closable: false, favorite: true, content: '', time: 0, render: contentConfig.render},
 ]);
 const activeKey = ref(panes.value[0].key);
 
@@ -194,7 +196,7 @@ const utf8String = (str: string) => {
 const getJsonStr = (str: string) => {
   try {
     const json = JSON.parse(str)
-    if (typeof json !== 'object'){
+    if (typeof json !== 'object') {
       throw Error('错误');
     }
     str = jsonFormat(getEscapeJson(json))
@@ -870,7 +872,13 @@ const dateTimeTrans = () => {
 const add = () => {
   const nowTime = new Date().getTime();
   activeKey.value = nowTime;
-  panes.value.push({title: dayjs(nowTime).format('HH:mm:ss'), key: nowTime, content: '', time: nowTime});
+  panes.value.push({
+    title: dayjs(nowTime).format('HH:mm:ss'),
+    key: nowTime,
+    content: '',
+    time: nowTime,
+    render: contentConfig.render
+  });
 };
 
 const remove = (targetKeyStr: string) => {
@@ -1116,15 +1124,17 @@ const handleConfigMenuClick = (clickInfo: any) => {
       contentConfig.useWrap = !contentConfig.useWrap;
       break;
     case "switchCode":
-      if (getActive().content || panes.value.length > 1) {
-        message.error('有数据或者多个选项卡无法切换');
+      if (getActive().content) {
+        message.error('有数据无法切换');
         return
       }
       const nextCodeTemplete: any = {
         brace: 'moncaco',
         moncaco: 'brace'
       };
-      useCodeTemplate.value = nextCodeTemplete[useCodeTemplate.value]
+      const newRender = nextCodeTemplete[getActive().render]
+      getActive().render = newRender
+      contentConfig.render = newRender
       break;
     case "switchTheme":
       const nextTheme: any = {
@@ -1233,11 +1243,11 @@ onMounted(() => {
       <a-tab-pane v-for="pane in panes" :key="pane.key" :tab="pane.title" :closable="pane.closable || !pane.favorite"
                   style="height: 100%;width: 100%;">
         <div ref="tabsContainerRef" style="height: 100%; width: 100%;overflow: hidden;">
-          <BraceTemplate v-if="useCodeTemplate == 'brace'"
+          <BraceTemplate v-if="pane.render == 'brace'"
                          :ref="getContentRef(pane.key)"
                          :config="contentConfig"
                          @onChange="onChange"></BraceTemplate>
-          <MonacoTemplate v-if="useCodeTemplate == 'moncaco'"
+          <MonacoTemplate v-if="pane.render == 'moncaco'"
                           :ref="getContentRef(pane.key)" :config="contentConfig"
                           @onChange="onChange"></MonacoTemplate>
         </div>
