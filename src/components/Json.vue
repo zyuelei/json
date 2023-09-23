@@ -902,7 +902,7 @@ const getActive = (targetKeyStr?: string | number): any => {
     targetKeyStr = activeKey.value
   }
   const targetKey = typeof targetKeyStr === "string" ? parseInt(targetKeyStr) : targetKeyStr
-  let restult
+  let restult = {}
   panes.value.map((value) => {
     if (value.key === targetKey) {
       restult = value
@@ -1156,14 +1156,44 @@ const handleResize = () => {
     })
   })
 };
-window.addEventListener('resize', handleResize);
 
+const switchTab = (e: KeyboardEvent) => {
+  console.info(e)
+  const key = e.key.toLowerCase()
+  if ((e.ctrlKey || e.altKey) && key === 'tab') {
+    let nextKey;
+    if (e.shiftKey) {
+      nextKey = activeIndex.value - 1;
+      if (nextKey < 0) nextKey = panes.value.length - 1;
+    } else {
+      nextKey = activeIndex.value + 1;
+      if (nextKey >= panes.value.length) nextKey = 0;
+    }
+    activeKey.value = panes.value[nextKey].key;
+    return;
+  }
+
+  if ((e.ctrlKey || e.altKey) && key === 'w') {
+    if (activeKey.value != 0 && !getActive().favorite) {
+      remove(activeKey.value.toString())
+      return;
+    }
+  }
+  if ((e.ctrlKey || e.altKey) && (key === 't' || key === 'n')) {
+    add()
+    return;
+  }
+  if ((e.ctrlKey || e.altKey) && (key === 'enter')) {
+    format()
+  }
+}
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
 });
 
 onMounted(() => {
-  handleResize()
+  window.addEventListener('resize', handleResize);
+  window.addEventListener('keydown', switchTab)
 });
 
 </script>
