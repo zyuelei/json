@@ -51,5 +51,5 @@ html,body {
     flex: 1;
 }
 .useDescContainer .ant-modal-confirm-content {
-    line-height: 12px;
+    line-height: 10px;
 }
