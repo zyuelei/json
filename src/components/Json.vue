@@ -265,19 +265,23 @@ const jsonFormat = (str: object) => {
   return JSON.stringify(str, null, contentConfig.tabSize)
 }
 //
-const jsonArchive = (str: string) => {
-  let n = [];
-  let i: any = !1;
-  let r = (str = str.split("\n").join(" ")).length;
-  for (let o = 0; o < r; o++) {
-    let a = str.charAt(o);
-    i && a === i ? "\\" !== str.charAt(o - 1) && (i = !1) : i || '"' !== a && "'" !== a ? i || " " !== a && "\t" !== a || (a = "") : i = a,
-        n.push(a)
-  }
-  str = n.join("")
-  return str
-}
+const jsonArchive = (input: string) => {
+  let result = [];
+  let quoteChar: any = false;
+  input = input.replace(/\n/g, " ");
 
+  for (let currentChar of input) {
+    if (quoteChar && currentChar === quoteChar && !result[result.length - 1].endsWith("\\")) {
+      quoteChar = false;
+    } else if (!quoteChar && (currentChar === '"' || currentChar === "'")) {
+      quoteChar = currentChar;
+    } else if (!quoteChar && (currentChar === " " || currentChar === "\t")) {
+      currentChar = "";
+    }
+    result.push(currentChar);
+  }
+  return result.join("");
+};
 const escapeString = (text: string) => {
   return text.replace(/\\\\/g, "\\").replace(/\\"/g, '"')
 }
