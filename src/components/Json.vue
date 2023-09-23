@@ -25,7 +25,7 @@ const props = defineProps<{
 const theme = ref(props.theme)
 const childElementRefs = ref();
 const tabsContainerRef = ref();
-const showAlt = ref(false)
+const showAltAlert = ref(false)
 const contentConfig = reactive<config>({
   fontSize: 14,
   tabSize: 4,
@@ -94,7 +94,7 @@ const favorite = () => {
   getActive().favorite = !getActive().favorite
 }
 const getFormatData = (str: string, formatParam?: formatParam) => {
-  const order = formatParam?.formatOrder ?? [supportAutoType.unicode, supportAutoType.utf8]
+  const order = formatParam?.formatOrder ?? [supportAutoType.unicode]
   const format = formatParam?.formatOpen ?? true;
 
   if (!format) {
@@ -765,6 +765,44 @@ const unserializeDecode = () => {
     contentRefSetFocus()
   }
 }
+const utf8Decode = () => {
+  let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
+  const parseText = selectInfo.matchText;
+  if (!parseText) {
+    contentRefSetFocus()
+    return
+  }
+
+  try {
+    const newData = utf8String(parseText)
+    if (newData == parseText) {
+      contentRefSetFocus()
+      return
+    }
+    replaceNewContent(contentInfo, selectInfo, newData)
+  } catch (e) {
+  }
+  contentRefSetFocus()
+}
+const unicodeDecode = () => {
+  let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
+  const parseText = selectInfo.matchText;
+  if (!parseText) {
+    contentRefSetFocus()
+    return
+  }
+
+  try {
+    const newData = unicodeString(parseText)
+    if (newData == parseText) {
+      contentRefSetFocus()
+      return
+    }
+    replaceNewContent(contentInfo, selectInfo, newData)
+  } catch (e) {
+  }
+  contentRefSetFocus()
+}
 
 const isTimestamp = (str: string | number) => {
   return /^\d{10}$|^\d{13}$/.test(str + '');
@@ -1151,18 +1189,20 @@ const handleConfigMenuClick = (clickInfo: any) => {
       break;
     case 'useDesc':
       const instructions = [
-        "默认行为：粘贴自动格式化json，支持转义字符(如：\\x22)、unicode字符、utf8字符的转码自动格式化 快捷键：ctrl + v",
-        "格式化：在一些需要二次格式化的时候(如：[get_path]后)可手动调用 快捷键：ctrl + center",
+        "默认行为：粘贴自动格式化json，支持unicode字符(如：\\x22、\\u0031)的转码自动格式化 快捷键：ctrl + v",
+        "格式化：在一些需要二次格式化的时候(如：[get]后)可手动调用 快捷键：ctrl + center",
         "新建tab：ctrl + shift + t",
         "新建tab并粘贴格式化：ctrl + shift + n",
         "切换tab：ctrl + tab  /  ctrl + shift + tab",
         "关闭tab：ctrl + shift + q  /  ctrl + shift + w",
         "锁定/解锁tab：锁定后无法通过[关闭tab]快捷键关闭当前tab 快捷键：ctrl + shift + l",
-        "get_path：在【全局/光标处】解析get参数，并尝试转为json 示例：a=1&b=1 快捷键：alt + 1",
-        "url_de：在【全局/光标处】url_decode，并尝试转为json 示例：%7B%22a%22%3A%221%22%7D 快捷键：alt + 2",
-        "base64_de：在【全局/光标处】进行url_decode及base64_decode，并尝试转为json。 示例：eyJhIjoiMSJ9 快捷键：alt + 3",
-        "unserialize：在【全局/光标处】进行unserialize，并尝试转为json 快捷键：alt + 4",
+        "get：在【全局/光标处】解析get参数，并尝试转为json 示例：a=1&b=1 快捷键：alt + 1",
+        "url：在【全局/光标处】url_decode，并尝试转为json 示例：%7B%22a%22%3A%221%22%7D 快捷键：alt + 2",
+        "base64：在【全局/光标处】进行url_decode及base64_decode，并尝试转为json 示例：eyJhIjoiMSJ9 快捷键：alt + 3",
+        "serialize：在【全局/光标处】进行unserialize，并尝试转为json 快捷键：alt + 4",
         "timestamp：在【全局/光标处】进行【10位时间戳/y-m-d H:i:s】格式的转换,若无法转换则会插入当前时间的10位时间戳 快捷键：alt + 5",
+        "unicode：在【全局/光标处】进行unicode_decode解码，并尝试转为json 示例 \\x22 \\u0031 快捷键：alt + 6",
+        "utf8：在【全局/光标处】进行utf8_decode解码。此功能由于大部分可被[unicode]替代所以无界面按钮且未来可能会移除 快捷键：alt + 7",
         "复制压缩：在【全局/选中处】复制去除回车、空格后的压缩数据 快捷键：alt + 8",
         "复制form：在【全局/选中处】复制key:value格式的json数据，用于postman等软件的导入 快捷键：alt + 9",
         "仅粘贴：在【全局/选中处】粘贴，并不做格式化操作 快捷键：alt + 0",
@@ -1207,7 +1247,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
     case 'control':
     case 'meta':
     case 'alt':
-      showAlt.value = true;
+      showAltAlert.value = true;
       break;
     case 'tab':
       let nextKey;
@@ -1251,10 +1291,6 @@ const handleKeyDown = (e: KeyboardEvent) => {
       format()
       e.preventDefault()
       break;
-    case '0':
-      pasteOnly()
-      e.preventDefault()
-      break;
     case '1':
       getDecode()
       e.preventDefault()
@@ -1275,6 +1311,14 @@ const handleKeyDown = (e: KeyboardEvent) => {
       timestampDecode()
       e.preventDefault()
       break;
+    case '6':
+      unicodeDecode()
+      e.preventDefault()
+      break;
+    case '7':
+      utf8Decode()
+      e.preventDefault()
+      break;
     case '8':
       archiveCopy()
       e.preventDefault()
@@ -1283,12 +1327,16 @@ const handleKeyDown = (e: KeyboardEvent) => {
       formDataCopy()
       e.preventDefault()
       break;
+    case '0':
+      pasteOnly()
+      e.preventDefault()
+      break;
   }
 
 }
 
 const handleKeyUp = () => {
-  showAlt.value = false
+  showAltAlert.value = false
 }
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
@@ -1377,26 +1425,24 @@ onMounted(() => {
 
     <a-space :size="4" style="width:100%;justify-content:end;padding: 2px 14px 2px 14px;">
 
-      <div style="width:100%;display: flex;flex-direction: row;justify-content: space-between">
+      <div style="width:100%;display: flex;flex-direction: row;justify-content: end">
         <!--        <a-button @click="format()">格式化</a-button>-->
         <!--      <a-button @click="paste">粘贴</a-button>-->
         <!--      <a-button @click="copy">复制</a-button>-->
         <!--      <a-button @click="escape">去除转义</a-button>-->
         <!--      <a-button @click="escapeCursor">光标处去转义</a-button>-->
         <!--      <a-button @click="showModal">历史</a-button>-->
-
         <div>
-          <a-button class="operateBtn" @click="archiveCopy">{{ showAlt ? '8' : '' }}复制压缩</a-button>
-          <a-button class="operateBtn" @click="formDataCopy">{{ showAlt ? '9' : '' }}复制form</a-button>
-          <a-button class="operateBtn" @click="pasteOnly"> {{ showAlt ? '0' : '' }}仅粘贴</a-button>
-        </div>
-
-        <div>
-          <a-button class="operateBtn" @click="getDecode">{{ showAlt ? '1' : '' }}get_path</a-button>
-          <a-button class="operateBtn" @click="urlDecode">{{ showAlt ? '2' : '' }}url_de</a-button>
-          <a-button class="operateBtn" @click="base64Decode">{{ showAlt ? '3' : '' }}base64_de</a-button>
-          <a-button class="operateBtn" @click="unserializeDecode">{{ showAlt ? '4' : '' }}unserialize</a-button>
-          <a-button class="operateBtn" @click="timestampDecode">{{ showAlt ? '5' : '' }}timestamp</a-button>
+          <a-button class="operateBtnSmall" @click="getDecode">{{ showAltAlert ? '1' : '' }} get</a-button>
+          <a-button class="operateBtnSmall" @click="urlDecode">{{ showAltAlert ? '2' : '' }} url</a-button>
+          <a-button class="operateBtnSmall" @click="base64Decode">{{ showAltAlert ? '3' : '' }} base64</a-button>
+          <a-button class="operateBtn" @click="unserializeDecode">{{ showAltAlert ? '4' : '' }} serialize</a-button>
+          <a-button class="operateBtn" @click="timestampDecode">{{ showAltAlert ? '5' : '' }} timestamp</a-button>
+          <a-button class="operateBtn" @click="unicodeDecode">{{ showAltAlert ? '6' : '' }} unicode</a-button>
+          <!--          <a-button class="operateBtn" @click="utf8Decode">{{showAltAlert ? '}':''}}7 utf8</a-button>-->
+          <a-button class="operateBtn" @click="archiveCopy">{{ showAltAlert ? '8' : '' }} 复制压缩</a-button>
+          <a-button class="operateBtn" @click="formDataCopy">{{ showAltAlert ? '9' : '' }} 复制form</a-button>
+          <a-button class="operateBtnSmall" @click="pasteOnly">{{ showAltAlert ? '0' : '' }} 仅粘贴</a-button>
         </div>
       </div>
 
@@ -1437,6 +1483,10 @@ onMounted(() => {
 
 .dark {
   background: #303133;
+}
+
+.operateBtnSmall {
+  width: 70px;
 }
 
 .operateBtn {
