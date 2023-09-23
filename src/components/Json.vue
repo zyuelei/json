@@ -1278,6 +1278,19 @@ const handleKeyDown = (e: KeyboardEvent) => {
       }, 30)
       e.preventDefault()
       break;
+    case 'm':
+      let {selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
+      if (!selectInfo.matchText || !selectInfo.isCursor) {
+        message.error('光标处无内容')
+        return false;
+      }
+      setTimeout(() => {
+        format(selectInfo.matchText)
+      }, 30)
+      e.preventDefault()
+      add()
+      e.preventDefault()
+      break;
     case 't':
       add()
       e.preventDefault()
@@ -1331,12 +1344,6 @@ const handleKeyDown = (e: KeyboardEvent) => {
       break;
     case '0':
       pasteOnly()
-      e.preventDefault()
-      break;
-    case 'm':
-      let {selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
-      format(selectInfo.matchText)
-      add()
       e.preventDefault()
       break;
   }
