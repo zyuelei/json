@@ -1407,9 +1407,6 @@ onMounted(() => {
           </a-button>
           <template #overlay>
             <a-menu @click="handleConfigMenuClick">
-              <a-menu-item style="width: 100px" key="useDesc">
-                使用说明
-              </a-menu-item>
               <a-menu-item style="width: 100px" key="useWrap">
                 切换换行
               </a-menu-item>
@@ -1418,6 +1415,9 @@ onMounted(() => {
               </a-menu-item>
               <a-menu-item style="width: 100px" key="switchCode">
                 切换渲染器
+              </a-menu-item>
+              <a-menu-item style="width: 100px" key="useDesc">
+                使用说明
               </a-menu-item>
             </a-menu>
           </template>
