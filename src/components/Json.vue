@@ -1216,6 +1216,7 @@ const handleConfigMenuClick = (clickInfo: any) => {
         width: '100%',
         title: '使用说明',
         wrapClassName: 'useDescContainer',
+        okText: '这不是小菜一碟',
         content: content,
       });
 
