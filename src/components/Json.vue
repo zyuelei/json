@@ -1184,7 +1184,7 @@ const handleConfigMenuClick = (clickInfo: any) => {
     case 'useDesc':
       const instructions = [
         "默认行为：粘贴自动格式化json，支持unicode字符(如：\\x22、\\u0031)的转码自动格式化 快捷键：ctrl + v",
-        "格式化：在一些需要二次格式化的时候(如：[get]后)可手动调用 快捷键：ctrl + center",
+        "格式化：在一些需要二次格式化的时候(如：[get]后)可手动调用 快捷键：ctrl + center / alt + enter",
         "新建tab：ctrl + t / alt + t",
         "新建tab并粘贴格式化：ctrl + n / alt + n",
         "新建tab并粘贴光标处内容格式化：ctrl + j / alt + j",

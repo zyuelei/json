@@ -87,17 +87,26 @@ const init = () => {
     const content = editor.getValue() // 给父组件实时返回最新文本
     emit('onChange', {content: content, format: true});
   });
+  editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, function () {
+        const content = editor.getValue() // 给父组件实时返回最新文本
+        emit('onChange', {content: content, format: true});
+      }
+  );
+  editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter, function () {
+        const content = editor.getValue() // 给父组件实时返回最新文本
+        emit('onChange', {content: content, format: true});
+      }
+  );
+// editor.onDidChangeCursorPosition(event => {
+//   const position = event.position;
+//   const lineNumber = position.lineNumber;
+//   const column = position.column;
+//   cursorLastPosition.value.lineNumber = position.lineNumber;
+//   cursorLastPosition.value.column = position.column;
+//   console.log("c:", lineNumber, column);
+// });
 
-  // editor.onDidChangeCursorPosition(event => {
-  //   const position = event.position;
-  //   const lineNumber = position.lineNumber;
-  //   const column = position.column;
-  //   cursorLastPosition.value.lineNumber = position.lineNumber;
-  //   cursorLastPosition.value.column = position.column;
-  //   console.log("c:", lineNumber, column);
-  // });
-
-  // window.addEventListener('resize', handleResize);
+// window.addEventListener('resize', handleResize);
 }
 
 

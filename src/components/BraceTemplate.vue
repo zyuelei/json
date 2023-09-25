@@ -41,6 +41,7 @@ const showEdit = (editorDiv: any) => {
     let content = editor.value.getValue()
     emit('onChange', {content, format: false});
   })
+  editor.value.commands.bindKey("Alt-0", null);
 
 // 获取折叠行的数据
 //   function getFoldedLines() {
