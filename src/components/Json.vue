@@ -1185,12 +1185,12 @@ const handleConfigMenuClick = (clickInfo: any) => {
       const instructions = [
         "默认行为：粘贴自动格式化json，支持unicode字符(如：\\x22、\\u0031)的转码自动格式化 快捷键：ctrl + v",
         "格式化：在一些需要二次格式化的时候(如：[get]后)可手动调用 快捷键：ctrl + center",
-        "新建tab：ctrl + shift + t",
-        "新建tab并粘贴格式化：ctrl + shift + n",
-        "新建tab并粘贴光标处内容格式化：ctrl + shift + m",
+        "新建tab：ctrl + t / alt + t",
+        "新建tab并粘贴格式化：ctrl + n / alt + n",
+        "新建tab并粘贴光标处内容格式化：ctrl + j / alt + j",
         "切换tab：ctrl + tab  /  ctrl + shift + tab",
-        "关闭tab：ctrl + shift + q  /  ctrl + shift + w",
-        "锁定/解锁tab：锁定后无法通过[关闭tab]快捷键关闭当前tab 快捷键：ctrl + shift + l",
+        "关闭tab：ctrl + q / alt + q",
+        "锁定/解锁tab：锁定后无法通过[关闭tab]快捷键关闭当前tab 快捷键：ctrl + shift + L / alt + shift + L",
         "get：在【全局/光标处】解析get参数，并尝试转为json 示例：a=1&b=1 快捷键：alt + 1",
         "url：在【全局/光标处】url_decode，并尝试转为json 示例：%7B%22a%22%3A%221%22%7D 快捷键：alt + 2",
         "base64：在【全局/光标处】进行url_decode及base64_decode，并尝试转为json 示例：eyJhIjoiMSJ9 快捷键：alt + 3",
@@ -1201,7 +1201,8 @@ const handleConfigMenuClick = (clickInfo: any) => {
         "复制压缩：在【全局/选中处】复制去除回车、空格后的压缩数据 快捷键：alt + 8",
         "复制form：在【全局/选中处】复制key:value格式的json数据，用于postman等软件的导入 快捷键：alt + 9",
         "仅粘贴：在【全局/选中处】粘贴，并不做格式化操作 快捷键：alt + 0",
-        "注释：【全局】指当前tab内所有内容；【光标处】指被光标在双引号包裹的字符串中；【选中处】指光标选中的内容"
+        "注释：【全局】指当前tab内所有内容；【光标处】指被光标在双引号包裹的单行字符串中；【选中处】指光标选中的内容",
+        "快捷键仅针对windows的utools环境",
       ];
 
       let content = h('div',
@@ -1237,12 +1238,13 @@ const handleResize = () => {
 
 const handleKeyDown = (e: KeyboardEvent) => {
   const key = e.key.toLowerCase()
-  if (!(e.ctrlKey || e.altKey || e.metaKey)) {
+  // @ts-ignore
+  const isMac = window.isMacOS && window.isMacOS()
+  const listenKey = isMac ? e.metaKey || e.altKey : e.ctrlKey || e.altKey;
+  if (!listenKey) {
     return;
   }
   switch (key) {
-    case 'control':
-    case 'meta':
     case 'alt':
       showAltAlert.value = true;
       break;
@@ -1273,7 +1275,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
       }, 30)
       e.preventDefault()
       break;
-    case 'm':
+    case 'j':
       let {selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
       if (!selectInfo.matchText || !selectInfo.isCursor) {
         message.error('光标处无内容')

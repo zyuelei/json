@@ -50,3 +50,20 @@ const isDark = (callback) => {
         callback(utools.isDarkColors());
     })
 }
+
+window.isMacOS = () => {
+    return toolsFun(() => {
+        return utools.isMacOS()
+    }, () => {
+        return getOperatingSystem() === 'MacOs'
+    })
+}
+
+function getOperatingSystem() {
+    var os = "Unknown OS";
+    if (navigator.appVersion.indexOf("Win") !== -1) os = "Windows";
+    if (navigator.appVersion.indexOf("Mac") !== -1) os = "MacOs";
+    if (navigator.appVersion.indexOf("X11") !== -1) os = "UNIX";
+    if (navigator.appVersion.indexOf("Linux") !== -1) os = "Linux";
+    return os;
+}
