@@ -12,7 +12,6 @@
 import dayjs from 'dayjs'
 import BraceTemplate from "./BraceTemplate.vue";
 import MonacoTemplate from "./MonacoTemplate.vue";
-import PrettyTemplate from "./PrettyTemplate.vue";
 import utf8 from "utf8";
 import {
   config,
