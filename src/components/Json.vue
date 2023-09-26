@@ -52,12 +52,10 @@ window.onPluginEnter && window.onPluginEnter(({payload, type, code}: any) => {
   // console.info('in', payload, type, code);
   switch (code) {
     case "json_format":
-      if (type !== 'regex') {
-        contentRefSetFocus(50)
-        return
+      if (type === 'regex') {
+        activeKey.value = 0
+        setValue(payload);
       }
-      activeKey.value = 0
-      setValue(payload);
       break;
     case "get_url_to_json":
       activeKey.value = 0
@@ -67,11 +65,10 @@ window.onPluginEnter && window.onPluginEnter(({payload, type, code}: any) => {
       activeKey.value = 0
       setValue(payload, {formatOrder: [supportAutoType.unserialize]});
       break;
-    case "utf8_to_json":
     case "unicode_decode":
     default:
       activeKey.value = 0
-      setValue(payload);
+      setValue(payload, {formatOrder: [supportAutoType.unicode]});
       break;
   }
   contentRefSetFocus(50)
