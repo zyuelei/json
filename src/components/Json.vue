@@ -1181,23 +1181,23 @@ const handleConfigMenuClick = (clickInfo: any) => {
     case 'useDesc':
       const instructions = [
         "默认行为：粘贴自动格式化json，支持unicode字符(如：\\x22、\\u0031)的转码自动格式化 快捷键：ctrl + v",
-        "格式化：在一些需要二次格式化的时候(如：[get]后)可手动调用 快捷键：ctrl + center / alt + enter",
+        "格式化：在【选中处/全局】一些需要二次格式化的时候(如：[get]后)可手动调用 快捷键：ctrl + center / alt + enter",
         "新建tab：ctrl + t / alt + t",
         "新建tab并粘贴格式化：ctrl + n / alt + n",
         "新建tab并粘贴【选中处/光标处】内容格式化：ctrl + j / alt + j",
         "切换tab：ctrl + tab  /  ctrl + shift + tab",
         "关闭tab：ctrl + q / alt + q",
         "锁定/解锁tab：锁定后无法通过[关闭tab]快捷键关闭当前tab 快捷键：ctrl + shift + L / alt + shift + L",
-        "get：在【全局/光标处】解析get参数，并尝试转为json 示例：a=1&b=1 快捷键：alt + 1",
-        "url：在【全局/光标处】url_decode，并尝试转为json 示例：%7B%22a%22%3A%221%22%7D 快捷键：alt + 2",
-        "base64：在【全局/光标处】进行url_decode及base64_decode，并尝试转为json 示例：eyJhIjoiMSJ9 快捷键：alt + 3",
-        "serialize：在【全局/光标处】进行unserialize，并尝试转为json 快捷键：alt + 4",
-        "timestamp：在【全局/光标处】进行【10位时间戳/y-m-d H:i:s】格式的转换,若无法转换则会插入当前时间的10位时间戳 快捷键：alt + 5",
-        "unicode：在【全局/光标处】进行unicode_decode解码，并尝试转为json 示例 \\x22 \\u0031 快捷键：alt + 6",
-        "utf8：在【全局/光标处】进行utf8_decode解码。此功能由于大部分可被[unicode]替代所以无界面按钮且未来可能会移除 快捷键：alt + 7",
-        "复制压缩：在【全局/选中处】复制去除回车、空格后的压缩数据 快捷键：alt + 8",
-        "复制form：在【全局/选中处】复制key:value格式的json数据，用于postman等软件的导入 快捷键：alt + 9",
-        "仅粘贴：在【全局/选中处】粘贴，并不做格式化操作 快捷键：alt + 0",
+        "get：在【光标处/全局】解析get参数，并尝试转为json 示例：a=1&b=1 快捷键：alt + 1",
+        "url：在【光标处/全局】url_decode，并尝试转为json 示例：%7B%22a%22%3A%221%22%7D 快捷键：alt + 2",
+        "base64：在【光标处/全局】进行url_decode及base64_decode，并尝试转为json 示例：eyJhIjoiMSJ9 快捷键：alt + 3",
+        "serialize：在【光标处/全局】进行unserialize，并尝试转为json 快捷键：alt + 4",
+        "timestamp：在【光标处/全局】进行【10位时间戳/y-m-d H:i:s】格式的转换,若无法转换则会插入当前时间的10位时间戳 快捷键：alt + 5",
+        "unicode：在【光标处/全局】进行unicode_decode解码，并尝试转为json 示例 \\x22 \\u0031 快捷键：alt + 6",
+        "utf8：在【光标处/全局】进行utf8_decode解码。此功能由于大部分可被[unicode]替代所以无界面按钮且未来可能会移除 快捷键：alt + 7",
+        "复制压缩：在【选中处/全局】复制去除回车、空格后的压缩数据 快捷键：alt + 8",
+        "复制form：在【选中处/全局】复制key:value格式的json数据，用于postman等软件的导入 快捷键：alt + 9",
+        "仅粘贴：在【选中处/全局】粘贴，并不做格式化操作 快捷键：alt + 0",
         "注释：【全局】指当前tab内所有内容；【光标处】指被光标在双引号包裹的单行字符串中；【选中处】指光标选中的内容",
         "快捷键仅针对windows的utools环境",
       ];
@@ -1419,10 +1419,10 @@ onMounted(() => {
           <BraceTemplate v-if="pane.render == supportEditTemplateType.brace"
                          ref="childElementRefs"
                          :config="contentConfig"
-                         @onChange="onChange"></BraceTemplate>
+                         @onChange="onChange" @format="format()"></BraceTemplate>
           <MonacoTemplate v-if="pane.render == supportEditTemplateType.monaco"
                           ref="childElementRefs" :config="contentConfig"
-                          @onChange="onChange"></MonacoTemplate>
+                          @onChange="onChange" @format="format()"></MonacoTemplate>
         </div>
       </a-tab-pane>
     </a-tabs>

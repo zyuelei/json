@@ -41,8 +41,7 @@ let editor: any;
   }
 }
 
-
-const emit = defineEmits(['onChange'])
+const emit = defineEmits(['onChange', 'format'])
 const props = defineProps<{ config: config }>()
 const propsRle = reactive(props)
 const propsRef = toRefs<{ config: config }>(propsRle)
@@ -88,13 +87,11 @@ const init = () => {
     emit('onChange', {content: content, format: true});
   });
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, function () {
-        const content = editor.getValue() // 给父组件实时返回最新文本
-        emit('onChange', {content: content, format: true});
+        emit('format');
       }
   );
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter, function () {
-        const content = editor.getValue() // 给父组件实时返回最新文本
-        emit('onChange', {content: content, format: true});
+        emit('format');
       }
   );
 // editor.onDidChangeCursorPosition(event => {

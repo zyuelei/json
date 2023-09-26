@@ -24,7 +24,7 @@ watchEffect(() => {
     propsRef.config.value.theme == 'dark' ? editor.value.setTheme('ace/theme/monokai') : editor.value.setTheme('ace/theme/textmate') // 设置主题
   }
 })
-const emit = defineEmits(['onChange'])
+const emit = defineEmits(['onChange', 'format'])
 
 const showEdit = (editorDiv: any) => {
   editor.value = ace.edit(editorDiv);
