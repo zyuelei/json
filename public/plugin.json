@@ -15,7 +15,7 @@
       "explain": "unicode转码",
       "cmds": [{
           "type": "regex",
-          "label": "utf8转义",
+          "label": "unicode转码",
           "match": "/\\\\u([\\dA-Fa-f]{4})|\\\\x([0-9A-Fa-f]{2})/g"
         }
       ]
