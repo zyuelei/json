@@ -1332,6 +1332,8 @@ const handleKeyDown = (e: KeyboardEvent) => {
     case '0':
       pasteOnly()
       break;
+    default:
+      return;
   }
   e.preventDefault()
 }
