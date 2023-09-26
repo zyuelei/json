@@ -1187,7 +1187,7 @@ const handleConfigMenuClick = (clickInfo: any) => {
         "格式化：在一些需要二次格式化的时候(如：[get]后)可手动调用 快捷键：ctrl + center / alt + enter",
         "新建tab：ctrl + t / alt + t",
         "新建tab并粘贴格式化：ctrl + n / alt + n",
-        "新建tab并粘贴光标处内容格式化：ctrl + j / alt + j",
+        "新建tab并粘贴【选中处/光标处】内容格式化：ctrl + j / alt + j",
         "切换tab：ctrl + tab  /  ctrl + shift + tab",
         "关闭tab：ctrl + q / alt + q",
         "锁定/解锁tab：锁定后无法通过[关闭tab]快捷键关闭当前tab 快捷键：ctrl + shift + L / alt + shift + L",
@@ -1258,92 +1258,85 @@ const handleKeyDown = (e: KeyboardEvent) => {
         if (nextKey >= panes.value.length) nextKey = 0;
       }
       activeKey.value = panes.value[nextKey].key;
-      e.preventDefault()
       break;
     case 'w':
     case 'q':
       if (activeKey.value == 0 || getActive().favorite) {
+        e.preventDefault()
         return
       }
       remove(activeKey.value.toString())
-      e.preventDefault()
       break;
     case 'n':
       add()
       setTimeout(() => {
         pasteAndFormat()
       }, 30)
-      e.preventDefault()
       break;
     case 'j':
-      let {selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
+      let matchText = '';
+      let {selectInfo} = getContentCursorOrAll(ContentSelectType.select);
       if (!selectInfo.matchText || !selectInfo.isCursor) {
-        message.error('光标处无内容')
-        return false;
+        let {selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
+        if (!selectInfo.matchText || !selectInfo.isCursor) {
+          message.error('选中/光标处无内容')
+          e.preventDefault()
+          return false;
+        }
+        matchText = selectInfo.matchText
+      } else {
+        matchText = selectInfo.matchText
       }
       setTimeout(() => {
-        format(selectInfo.matchText)
+        format(matchText)
       }, 30)
-      e.preventDefault()
       add()
-      e.preventDefault()
       break;
     case 't':
       add()
-      e.preventDefault()
       break;
     case 'l':
       if (activeKey.value == 0) {
+        e.preventDefault()
         return
       }
       favorite()
-      e.preventDefault()
       break;
     case 'enter':
       format()
-      e.preventDefault()
       break;
     case '1':
       getDecode()
-      e.preventDefault()
       break;
     case '2':
       urlDecode()
-      e.preventDefault()
       break;
     case '3':
       base64Decode()
-      e.preventDefault()
       break;
     case '4':
       unserializeDecode()
-      e.preventDefault()
       break;
     case '5':
       timestampDecode()
-      e.preventDefault()
       break;
     case '6':
       unicodeDecode()
-      e.preventDefault()
       break;
     case '7':
       utf8Decode()
-      e.preventDefault()
       break;
     case '8':
       archiveCopy()
-      e.preventDefault()
       break;
     case '9':
       formDataCopy()
-      e.preventDefault()
       break;
     case '0':
       pasteOnly()
-      e.preventDefault()
       break;
   }
+  e.preventDefault()
 }
 
 const handleKeyUp = () => {
