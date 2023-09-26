@@ -29,7 +29,7 @@ window.onPluginEnter = (callback) => {
     })
 }
 
-window.isDark = (callback) => {
+window.isDark = () => {
     return toolsFun(() => {
         return utools.isDarkColors()
     }, () => {
@@ -43,12 +43,6 @@ const toolsFun = (callback, errCallback) => {
     } else {
         return errCallback && errCallback()
     }
-}
-
-const isDark = (callback) => {
-    return toolsFun((callback) => {
-        callback(utools.isDarkColors());
-    })
 }
 
 window.isMacOS = () => {
