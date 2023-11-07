@@ -224,6 +224,8 @@ const getEscapeJson = (json: any) => {
       try {
         if (!isNaN(Number(value)) && !isNaN(parseFloat(value))) {
           result = value
+        } else if (value === 'false' || value === 'true' || value === 'null') {
+          result = value
         } else {
           const json = JSON.parse(value);
           result = getEscapeJson(json)
