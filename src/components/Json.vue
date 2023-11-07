@@ -170,13 +170,23 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
 
   if (!hasJson) {
     try {
-      const temp = jsonParse('{"a":"' + jsonArchive(result) + '"}')
+      const temp = jsonParse('{"a":"' + result + '"}')
       const tempJson = getEscapeJson(temp);
       if (typeof tempJson == 'object' && tempJson.a && typeof tempJson.a == 'object') {
         result = jsonFormat(tempJson.a)
         hasJson = true
         // console.info('f:temp')
       }
+    } catch (e) {
+
+    }
+  }
+
+  if (!hasJson && result.includes(' ')) {
+    try {
+      // 为了支持微信的   字符
+      result = getJsonStr(jsonArchive(result))
+      hasJson = true
     } catch (e) {
 
     }
