@@ -16,7 +16,8 @@ import utf8 from "utf8";
 import {
   config,
   ContentSelectType,
-  editContentMy, getNextEnumValue,
+  editContentMy,
+  getNextEnumValue,
   matchRangeMy,
   panesInterface,
   rangeMy,
@@ -26,6 +27,9 @@ import {
 import {DownOutlined, LockOutlined, SettingOutlined, UnlockOutlined} from '@ant-design/icons-vue';
 import {unserialize} from 'serialize-php';
 import {message, Modal} from 'ant-design-vue';
+import JSONbigOrigin from 'json-bigint';
+
+const JSONbig = JSONbigOrigin({useNativeBigInt: true});
 
 const emit = defineEmits(['changeTheme'])
 const props = defineProps<{
@@ -74,6 +78,7 @@ window.onPluginEnter && window.onPluginEnter(({payload, type, code}: any) => {
   contentRefSetFocus(50)
 })
 
+
 const panes = ref<panesInterface[]>([
   {title: 'default', key: 0, closable: false, favorite: true, content: '', time: 0, render: contentConfig.render},
 ]);
@@ -82,6 +87,15 @@ const activeIndex = computed(() => {
   return panes.value.findIndex(obj => obj.key === activeKey.value)
 })
 
+const jsonParse = (value: any) => {
+  return JSONbig.parse(value);
+}
+const jsonStringify = (value: any, replacer?: (this: any, key: string, value: any) => any, space?: string | number) => {
+  return JSONbig.stringify(value, replacer, space)
+}
+const jsonFormat = (str: object) => {
+  return jsonStringify(str, undefined, contentConfig.tabSize)
+}
 const saveActiveValue = (str: string) => {
   getActive().content = str
 }
@@ -100,7 +114,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   try {
     if (!hasJson && order.includes(supportAutoType.get_param as never)) {
       const paramJson = getParamJson(str)
-      if (typeof paramJson === 'object' && JSON.stringify(paramJson) != '{}') {
+      if (typeof paramJson === 'object' && jsonStringify(paramJson) != '{}') {
         result = jsonFormat(paramJson)
         hasJson = true
         // console.info('f:get_param')
@@ -147,7 +161,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   }
   if (!hasJson && order.includes(supportAutoType.unserialize as never)) {
     const paramJson = getUnSerializeJson(str)
-    if (typeof paramJson === 'object' && JSON.stringify(paramJson) != '{}') {
+    if (typeof paramJson === 'object' && jsonStringify(paramJson) != '{}') {
       result = jsonFormat(paramJson)
       hasJson = true
       // console.info('f:unserialize')
@@ -156,7 +170,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
 
   if (!hasJson) {
     try {
-      const temp = JSON.parse('{"a":"' + result + '"}')
+      const temp = jsonParse('{"a":"' + result + '"}')
       const tempJson = getEscapeJson(temp);
       if (typeof tempJson == 'object' && tempJson.a && typeof tempJson.a == 'object') {
         result = jsonFormat(tempJson.a)
@@ -201,7 +215,7 @@ const utf8String = (str: string) => {
 }
 const getJsonStr = (str: string) => {
   try {
-    const json = JSON.parse(str)
+    const json = jsonParse(str)
     if (typeof json !== 'object') {
       throw Error('错误');
     }
@@ -227,7 +241,7 @@ const getEscapeJson = (json: any) => {
         } else if (value === 'false' || value === 'true' || value === 'null') {
           result = value
         } else {
-          const json = JSON.parse(value);
+          const json = jsonParse(value);
           result = getEscapeJson(json)
         }
       } catch (e) {
@@ -250,7 +264,7 @@ const getEscapeJson = (json: any) => {
 
   const escapedJson: any = {};
   for (let key in json) {
-    if (json.hasOwnProperty(key)) {
+    if (Object.hasOwnProperty.call(json, key)) {
       const value = json[key];
       escapedJson[key] = parse(value)
     }
@@ -258,11 +272,6 @@ const getEscapeJson = (json: any) => {
 
   return escapedJson;
 };
-
-
-const jsonFormat = (str: object) => {
-  return JSON.stringify(str, null, contentConfig.tabSize)
-}
 //
 const jsonArchive = (input: string) => {
   let result = [];
@@ -471,10 +480,10 @@ const isJson = (value: any, format?: boolean) => {
       if (format) {
         return jsonFormat(value);
       } else {
-        return JSON.stringify(value)
+        return jsonStringify(value)
       }
     }
-    const json = JSON.parse(value);
+    const json = jsonParse(value);
     if (typeof json == 'object') {
       if (format) {
         return jsonFormat(json)
@@ -657,7 +666,7 @@ function replaceNewContent(contentInfo: editContentMy, selectInfo: matchRangeMy,
   if (!newContent) {
     return
   }
-  newContent = typeof newContent == 'object' ? JSON.stringify(newContent) : newContent;
+  newContent = typeof newContent == 'object' ? jsonStringify(newContent) : newContent;
   if (newContentInfo.isJson && noFormat !== true) {
 
     setValue(getSubstringByTwoRange(getActive().content, newContent, {
@@ -1038,7 +1047,7 @@ function resolveArray(name: string, array: any[]) {
 }
 
 const getFormDataString = (jsonValues: string) => {
-  const jsonObject = JSON.parse(jsonValues);
+  const jsonObject = jsonParse(jsonValues);
   let formDataString = '';
   for (const [key, value] of Object.entries(jsonObject)) {
     if (value instanceof Object) {
@@ -1326,10 +1335,10 @@ const handleKeyDown = (e: KeyboardEvent) => {
       utf8Decode()
       break;
     case '8':
-      archiveCopy()
+      formDataCopy()
       break;
     case '9':
-      formDataCopy()
+      archiveCopy()
       break;
     case '0':
       pasteOnly()
@@ -1446,8 +1455,8 @@ onMounted(() => {
           <a-button class="operateBtn" @click="timestampDecode">{{ showAltAlert ? '5' : '' }} timestamp</a-button>
           <a-button class="operateBtn" @click="unicodeDecode">{{ showAltAlert ? '6' : '' }} unicode</a-button>
           <!--          <a-button class="operateBtn" @click="utf8Decode">{{showAltAlert ? '}':''}}7 utf8</a-button>-->
-          <a-button class="operateBtn" @click="archiveCopy">{{ showAltAlert ? '8' : '' }} 复制压缩</a-button>
-          <a-button class="operateBtn" @click="formDataCopy">{{ showAltAlert ? '9' : '' }} 复制form</a-button>
+          <a-button class="operateBtn" @click="formDataCopy">{{ showAltAlert ? '8' : '' }} 复制form</a-button>
+          <a-button class="operateBtn" @click="archiveCopy">{{ showAltAlert ? '9' : '' }} 复制压缩</a-button>
           <a-button class="operateBtnSmall" @click="pasteOnly">{{ showAltAlert ? '0' : '' }} 仅粘贴</a-button>
         </div>
       </div>
