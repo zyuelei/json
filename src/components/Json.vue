@@ -181,6 +181,17 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
 
     }
   }
+
+  if (!hasJson && result.includes(' ')) {
+    try {
+      // 为了支持微信的   字符
+      result = getJsonStr(jsonArchive(result))
+      hasJson = true
+    } catch (e) {
+
+    }
+  }
+
   return result;
 }
 // const utf8Verify = (str: string) => {
@@ -283,7 +294,7 @@ const jsonArchive = (input: string) => {
       quoteChar = false;
     } else if (!quoteChar && (currentChar === '"' || currentChar === "'")) {
       quoteChar = currentChar;
-    } else if (!quoteChar && (currentChar === " " || currentChar === "\t")) {
+    } else if (!quoteChar && (currentChar === " " || currentChar === " " || currentChar === "\t")) {
       currentChar = "";
     }
     result.push(currentChar);
