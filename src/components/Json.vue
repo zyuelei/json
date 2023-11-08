@@ -1217,11 +1217,11 @@ const handleConfigMenuClick = (clickInfo: any) => {
         "timestamp：在【光标处/全局】进行【10位时间戳/y-m-d H:i:s】格式的转换,若无法转换则会插入当前时间的10位时间戳 快捷键：alt + 5",
         "unicode：在【光标处/全局】进行unicode_decode解码，并尝试转为json 示例 \\x22 \\u0031 快捷键：alt + 6",
         "utf8：在【光标处/全局】进行utf8_decode解码。此功能由于大部分可被[unicode]替代所以无界面按钮且未来可能会移除 快捷键：alt + 7",
-        "复制压缩：在【选中处/全局】复制去除回车、空格后的压缩数据 快捷键：alt + 8",
-        "复制form：在【选中处/全局】复制key:value格式的json数据，用于postman等软件的导入 快捷键：alt + 9",
+        "复制form：在【选中处/全局】复制key:value格式的json数据，用于postman等软件的导入 快捷键：alt + 8",
+        "复制压缩：在【选中处/全局】复制去除回车、空格后的压缩数据 快捷键：alt + 9",
         "仅粘贴：在【选中处/全局】粘贴，并不做格式化操作 快捷键：alt + 0",
         "注释：【全局】指当前tab内所有内容；【光标处】指被光标在双引号包裹的单行字符串中；【选中处】指光标选中的内容",
-        "快捷键仅针对windows的utools环境",
+        "快捷键仅针对windows的utools环境，其余环境可能会略有不同或无法支持",
       ];
 
       let content = h('div',
