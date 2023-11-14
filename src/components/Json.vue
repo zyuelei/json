@@ -149,7 +149,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   if (!hasJson) {
     try {
       // 为了支持微信的   字符
-      const tempJson = escapeDecode(jsonArchive(result));
+      const tempJson = escapeDecode(jsonArchive(unicodeDecode(result)));
       if (tempJson && typeof tempJson == 'object') {
         result = jsonEncode(tempJson, contentConfig.tabSize)
         hasJson = true
@@ -361,6 +361,9 @@ const findLineNumberInfo = (contentInfo: editContentMy): matchRangeMy | null => 
 
 const isJson = (value: any, format?: boolean) => {
   format = format || false
+  if (!value) {
+    return false;
+  }
   try {
     if (typeof value == 'object') {
       if (format) {
@@ -781,7 +784,8 @@ const archiveCopy = () => {
 const formDataCopy = () => {
   const text = getSelectContentData()
   try {
-    const archiveText = formEncode(text)
+    const jsonObject = jsonDecode(text);
+    const archiveText = formEncode(jsonObject)
     windowCopy(archiveText)
   } catch (e) {
     message.error('转码失败');

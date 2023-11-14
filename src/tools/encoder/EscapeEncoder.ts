@@ -10,7 +10,7 @@ export class EscapeEncoder extends AbsBaseEncoder {
     }
 
     decode(input: unknown): unknown {
-        if (typeof input === 'string'){
+        if (typeof input === 'string') {
             return this.parse(input)
         }
         if (typeof input !== 'object' || input === null) {

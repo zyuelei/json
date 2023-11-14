@@ -1,5 +1,4 @@
 import {AbsBaseEncoder} from "./AbsBaseEncoder";
-import {jsonDecode} from "../AllEncoder.ts";
 function resolveObject(name: string, object: any) {
     let stringToReturn = '';
     for (const [key, value] of Object.entries(object)) {
@@ -35,10 +34,9 @@ function resolveArray(name: string, array: any[]) {
 export class FormEncoder extends AbsBaseEncoder {
     name: string = '';
 
-    encode(input: string): string {
-        const jsonObject = jsonDecode(input);
+    encode(input: Record<any, any>): string {
         let formDataString = '';
-        for (const [key, value] of Object.entries(jsonObject)) {
+        for (const [key, value] of Object.entries(input)) {
             if (value instanceof Object) {
                 formDataString += resolveObject(key, value);
                 continue;

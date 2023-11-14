@@ -57,6 +57,6 @@ export function escapeDecode(json: unknown) {
     return EscapeEncode.decode(json);
 }
 
-export function formEncode(jsonValues: string) {
+export function formEncode(jsonValues: Record<any, any>) {
     return FormEncode.encode(jsonValues)
 }
