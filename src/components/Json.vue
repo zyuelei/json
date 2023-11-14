@@ -12,7 +12,6 @@
 import dayjs from 'dayjs'
 import BraceTemplate from "./BraceTemplate.vue";
 import MonacoTemplate from "./MonacoTemplate.vue";
-import utf8 from "utf8";
 import {
   config,
   ContentSelectType,
@@ -25,11 +24,21 @@ import {
   supportEditTemplateType
 } from "../interface";
 import {DownOutlined, LockOutlined, SettingOutlined, UnlockOutlined} from '@ant-design/icons-vue';
-import {unserialize} from 'serialize-php';
 import {message, Modal} from 'ant-design-vue';
-import JSONbigOrigin from 'json-bigint';
-
-const JSONbig = JSONbigOrigin({useNativeBigInt: true});
+import {
+  base64Decode,
+  escapeDecode,
+  formEncode,
+  getParamDecode,
+  jsonDecode,
+  jsonEncode,
+  serializeDecode,
+  timeDecode,
+  timeEncode,
+  unicodeDecode,
+  urlDecode,
+  utf8Decode
+} from "../tools/AllEncoder";
 
 const emit = defineEmits(['changeTheme'])
 const props = defineProps<{
@@ -72,7 +81,7 @@ window.onPluginEnter && window.onPluginEnter(({payload, type, code}: any) => {
     case "unicode_decode":
     default:
       activeKey.value = 0
-      setValue(payload, {formatOrder: [supportAutoType.unicode]});
+      setValue(payload);
       break;
   }
   contentRefSetFocus(50)
@@ -87,15 +96,6 @@ const activeIndex = computed(() => {
   return panes.value.findIndex(obj => obj.key === activeKey.value)
 })
 
-const jsonParse = (value: any) => {
-  return JSONbig.parse(value);
-}
-const jsonStringify = (value: any, replacer?: (this: any, key: string, value: any) => any, space?: string | number) => {
-  return JSONbig.stringify(value, replacer, space)
-}
-const jsonFormat = (str: object) => {
-  return jsonStringify(str, undefined, contentConfig.tabSize)
-}
 const saveActiveValue = (str: string) => {
   getActive().content = str
 }
@@ -103,9 +103,8 @@ const favorite = () => {
   getActive().favorite = !getActive().favorite
 }
 const getFormatData = (str: string, formatParam?: formatParam) => {
-  const order = formatParam?.formatOrder ?? [supportAutoType.unicode]
+  const order = formatParam?.formatOrder ?? []
   const format = formatParam?.formatOpen ?? true;
-
   if (!format) {
     return str
   }
@@ -113,56 +112,21 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   let hasJson = false
   try {
     if (!hasJson && order.includes(supportAutoType.get_param as never)) {
-      const paramJson = getParamJson(str)
-      if (typeof paramJson === 'object' && jsonStringify(paramJson) != '{}') {
-        result = jsonFormat(paramJson)
+      const paramJson = getParamDecode(str)
+      if (typeof paramJson === 'object' && jsonEncode(paramJson) != '{}') {
+        result = jsonEncode(paramJson, contentConfig.tabSize)
         hasJson = true
-        // console.info('f:get_param')
       }
     }
   } catch (e) {
     // console.info(e)
   }
-  try {
-    if (!hasJson) {
-      result = getJsonStr(str)
-      hasJson = true
-      // console.info('f:json')
-    }
-  } catch (e) {
 
-  }
 
-  try {
-    if (!hasJson && order.includes(supportAutoType.unicode as never)) {
-      result = unicodeString(result)
-      // console.info('f:unicode')
-    }
-  } catch (e) {
-
-  }
-
-  try {
-    if (!hasJson && order.includes(supportAutoType.utf8 as never)) {
-      result = utf8String(result)
-      // console.info('f:utf8')
-    }
-  } catch (e) {
-
-  }
-
-  try {
-    if (!hasJson && result != str) {
-      result = getJsonStr(result)
-      hasJson = true
-    }
-  } catch (e) {
-
-  }
   if (!hasJson && order.includes(supportAutoType.unserialize as never)) {
-    const paramJson = getUnSerializeJson(str)
-    if (typeof paramJson === 'object' && jsonStringify(paramJson) != '{}') {
-      result = jsonFormat(paramJson)
+    const paramJson = serializeDecode(str)
+    if (typeof paramJson === 'object' && jsonEncode(paramJson) != '{}') {
+      result = jsonEncode(paramJson, contentConfig.tabSize)
       hasJson = true
       // console.info('f:unserialize')
     }
@@ -170,10 +134,10 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
 
   if (!hasJson) {
     try {
-      const temp = jsonParse('{"a":"' + result + '"}')
-      const tempJson = getEscapeJson(temp);
-      if (typeof tempJson == 'object' && tempJson.a && typeof tempJson.a == 'object') {
-        result = jsonFormat(tempJson.a)
+      // const temp = jsonDecode()
+      const tempJson = escapeDecode(result);
+      if (tempJson && typeof tempJson == 'object') {
+        result = jsonEncode(tempJson, contentConfig.tabSize)
         hasJson = true
         // console.info('f:temp')
       }
@@ -182,11 +146,14 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
     }
   }
 
-  if (!hasJson && result.includes(' ')) {
+  if (!hasJson) {
     try {
       // 为了支持微信的   字符
-      result = getJsonStr(jsonArchive(result))
-      hasJson = true
+      const tempJson = escapeDecode(jsonArchive(result));
+      if (tempJson && typeof tempJson == 'object') {
+        result = jsonEncode(tempJson, contentConfig.tabSize)
+        hasJson = true
+      }
     } catch (e) {
 
     }
@@ -194,95 +161,6 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
 
   return result;
 }
-// const utf8Verify = (str: string) => {
-//   const regex = /^.*(?:\\x[a-f0-9]{2})+.*$/
-//   if (!regex.test(str)) {
-//     return false
-//   }
-//   return true
-// }
-
-const unicodeString = (str: string): string => {
-  return str.replace(/\\u([\dA-Fa-f]{4})|\\x([0-9A-Fa-f]{2})/g, (match, grpU, grpX) => {
-    if (grpU) {
-      return String.fromCharCode(parseInt(grpU, 16));
-    }
-    if (grpX) {
-      return String.fromCharCode(parseInt(grpX, 16));
-    }
-    return match;
-  });
-}
-
-
-const utf8String = (str: string) => {
-  try {
-    str = utf8.decode(str);
-  } catch (e) {
-    // console.info('utf8 err', e)
-    throw e
-  }
-  return str
-}
-const getJsonStr = (str: string) => {
-  try {
-    const json = jsonParse(str)
-    if (typeof json !== 'object') {
-      throw Error('错误');
-    }
-    str = jsonFormat(getEscapeJson(json))
-  } catch (e) {
-    // console.info('json err', str)
-    throw e
-  }
-  return str
-}
-
-const getEscapeJson = (json: any) => {
-  if (typeof json !== 'object' || json === null) {
-    return json;
-  }
-
-  const parse = (value: any) => {
-    let result
-    if (typeof value === 'string') {
-      try {
-        if (!isNaN(Number(value)) && !isNaN(parseFloat(value))) {
-          result = value
-        } else if (value === 'false' || value === 'true' || value === 'null') {
-          result = value
-        } else {
-          const json = jsonParse(value);
-          result = getEscapeJson(json)
-        }
-      } catch (e) {
-        result = value;
-      }
-    } else if (Array.isArray(value)) {
-      result = value.map((item) => getEscapeJson(item));
-    } else if (typeof value === 'object') {
-      result = getEscapeJson(value);
-    } else {
-      result = value;
-    }
-    return result
-  }
-
-  if (Array.isArray(json)) {
-    json = json.map((item) => getEscapeJson(parse(item)));
-    return json
-  }
-
-  const escapedJson: any = {};
-  for (let key in json) {
-    if (Object.hasOwnProperty.call(json, key)) {
-      const value = json[key];
-      escapedJson[key] = parse(value)
-    }
-  }
-
-  return escapedJson;
-};
 //
 const jsonArchive = (input: string) => {
   let result = [];
@@ -301,9 +179,6 @@ const jsonArchive = (input: string) => {
   }
   return result.join("");
 };
-const escapeString = (text: string) => {
-  return text.replace(/\\\\/g, "\\").replace(/\\"/g, '"')
-}
 
 type formatParam = {
   formatOrder?: supportAutoType[],
@@ -489,15 +364,15 @@ const isJson = (value: any, format?: boolean) => {
   try {
     if (typeof value == 'object') {
       if (format) {
-        return jsonFormat(value);
+        return jsonEncode(value, contentConfig.tabSize);
       } else {
-        return jsonStringify(value)
+        return jsonEncode(value)
       }
     }
-    const json = jsonParse(value);
+    const json = jsonDecode(value);
     if (typeof json == 'object') {
       if (format) {
-        return jsonFormat(json)
+        return jsonEncode(json, contentConfig.tabSize)
       } else {
         return value
       }
@@ -507,57 +382,6 @@ const isJson = (value: any, format?: boolean) => {
   return false;
 }
 
-const getParamJson = (paramsString: string) => {
-  const paramObj: any = {};
-  const queryString = paramsString.replace(/^[^?]*\?/, '');
-
-  let startIndex = 0;
-  let endIndex = 0;
-  while (startIndex < queryString.length) {
-    // 搜索等号位置
-    const equalIndex = queryString.indexOf("=", startIndex);
-    if (equalIndex === -1) {
-      break;
-    }
-    // 搜索下一个键值对的等号位置
-    endIndex = queryString.indexOf("&", equalIndex);
-    if (endIndex === -1) {
-      endIndex = queryString.length;
-    }
-    // 取出键和值，并解码
-    const key = decodeURIComponent(queryString.slice(startIndex, equalIndex));
-    // 将键值对存储到 paramObj
-    const val = decodeURIComponent(queryString.slice(equalIndex + 1, endIndex));
-
-    paramObj[key] = val.replace(/\+/g, ' ')
-    // 更新下一个的开始位置
-    startIndex = endIndex + 1;
-  }
-
-  if (Object.keys(paramObj).length === 0) {
-    return paramsString;
-  }
-
-  return paramObj;
-}
-
-const getBase64Json = (str: string) => {
-  try {
-    return atob(str); // 尝试解码
-  } catch (e) {
-    try {
-      if (str.indexOf('%') != -1) {
-        const decode = getUrlDecodeString(str)
-        if (decode) {
-          return atob(decode)
-        }
-      }
-    } catch (e) {
-
-    }
-    throw e
-  }
-}
 
 function getContentCursorOrAll(type: ContentSelectType) {
   const contentInfo: editContentMy = getActiveEdit().getContentInfo();
@@ -605,7 +429,7 @@ function getContentCursorOrAll(type: ContentSelectType) {
   }
 }
 
-const base64Decode = () => {
+const base64Decode111 = () => {
   let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
   const parseText = selectInfo.matchText;
   if (!parseText) {
@@ -613,7 +437,7 @@ const base64Decode = () => {
     return
   }
   try {
-    const newData = getBase64Json(parseText)
+    const newData = base64Decode(parseText)
     if (newData == parseText) {
       contentRefSetFocus()
       return
@@ -631,7 +455,7 @@ const getDecode = () => {
     return
   }
   try {
-    const newData = getParamJson(parseText)
+    const newData = getParamDecode(parseText)
     if (typeof newData !== 'object') {
       contentRefSetFocus()
       return
@@ -643,15 +467,8 @@ const getDecode = () => {
   }
 }
 
-function getUrlDecodeString(parseText: string) {
-  try {
-    return decodeURIComponent(parseText);
-  } catch (e) {
-    throw e
-  }
-}
 
-const urlDecode = () => {
+const urlDecode111 = () => {
   let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
   const parseText = selectInfo.matchText;
 
@@ -660,7 +477,7 @@ const urlDecode = () => {
     return
   }
   try {
-    const newData = getUrlDecodeString(parseText)
+    const newData = urlDecode(parseText)
     if (newData == parseText) {
       contentRefSetFocus()
       return
@@ -677,7 +494,7 @@ function replaceNewContent(contentInfo: editContentMy, selectInfo: matchRangeMy,
   if (!newContent) {
     return
   }
-  newContent = typeof newContent == 'object' ? jsonStringify(newContent) : newContent;
+  newContent = typeof newContent == 'object' ? jsonEncode(newContent) : newContent;
   if (newContentInfo.isJson && noFormat !== true) {
 
     setValue(getSubstringByTwoRange(getActive().content, newContent, {
@@ -747,21 +564,7 @@ const getSubstringByRange = (str: string, range: rangeMy): string => {
 
   return selectedText;
 }
-const getUnSerializeJson = (parseText: string) => {
-  try {
-    return unserialize(parseText)
-  } catch (e) {
-    const escape = escapeString(parseText)
-    if (escape != parseText) {
-      try {
-        return unserialize(escape)
-      } catch (e) {
-        throw e
-      }
-    }
-    throw e
-  }
-}
+
 const unserializeDecode = () => {
   let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
   const parseText = selectInfo.matchText;
@@ -771,7 +574,7 @@ const unserializeDecode = () => {
   }
 
   try {
-    const newData = getUnSerializeJson(parseText)
+    const newData = serializeDecode(parseText)
     if (newData == parseText) {
       contentRefSetFocus()
       return
@@ -782,7 +585,7 @@ const unserializeDecode = () => {
     contentRefSetFocus()
   }
 }
-const utf8Decode = () => {
+const utf8Decode111 = () => {
   let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
   const parseText = selectInfo.matchText;
   if (!parseText) {
@@ -791,7 +594,7 @@ const utf8Decode = () => {
   }
 
   try {
-    const newData = utf8String(parseText)
+    const newData = utf8Decode(parseText)
     if (newData == parseText) {
       contentRefSetFocus()
       return
@@ -801,7 +604,7 @@ const utf8Decode = () => {
   }
   contentRefSetFocus()
 }
-const unicodeDecode = () => {
+const unicodeDecode111 = () => {
   let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
   const parseText = selectInfo.matchText;
   if (!parseText) {
@@ -810,7 +613,7 @@ const unicodeDecode = () => {
   }
 
   try {
-    const newData = unicodeString(parseText)
+    const newData = unicodeDecode(parseText)
     if (newData == parseText) {
       contentRefSetFocus()
       return
@@ -834,45 +637,7 @@ const getNowTimestamp = () => {
   return Math.floor(Date.now() / 1000);
 }
 
-const formatTimeStamp = (str: string, length?: number) => {
-  str = '' + str
-  const calcLength = str.length == 23 ? 13 : 10;
-  length = length || calcLength
-  const timestamp = Date.parse(str);
-  const timestampString = timestamp.toString();
-  return timestampString.substring(0, length);
-}
 
-const formateDate = (timestamp: number | string, format?: string) => {
-  let length = ('' + timestamp).length;
-  if (length == 10) {
-    timestamp = parseInt(timestamp + '') * 1000;
-    format = format ? format : 'YYYY-mm-dd HH:MM:SS'
-  } else if (length == 13) {
-    timestamp = parseInt(timestamp + '');
-    format = format ? format : 'YYYY-mm-dd HH:MM:SS.SSS'
-  }
-  if (!format) {
-    return ''
-  }
-  const date = new Date(timestamp);
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hour = String(date.getHours()).padStart(2, '0');
-  const minute = String(date.getMinutes()).padStart(2, '0');
-  const second = String(date.getSeconds()).padStart(2, '0');
-  const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
-  return format
-      .replace('YYYY', '' + year)
-      .replace('mm', month)
-      .replace('dd', day)
-      .replace('HH', hour)
-      .replace('MM', minute)
-      .replace('SS', second)
-      .replace('SSS', milliseconds);
-}
 const timestampDecode = () => {
   if (!timestampTrans()) {
     if (!dateTimeTrans()) {
@@ -890,7 +655,7 @@ const timestampTrans = () => {
     let newData;
     if (isTimestamp(parseText)) {
       // 时间戳支持10 / 13 位
-      newData = formateDate(parseText)
+      newData = timeDecode(parseText)
     } else {
       return false
     }
@@ -909,7 +674,7 @@ const dateTimeTrans = () => {
     let newData;
     if (isDateTime(parseText)) {
       // 时间转换
-      const timestamp = formatTimeStamp(parseText);
+      const timestamp = timeEncode(parseText);
       if (!isTimestamp(timestamp)) {
         return false
       }
@@ -925,7 +690,7 @@ const dateTimeTrans = () => {
 }
 
 
-const add = () => {
+const addTab = () => {
   const nowTime = new Date().getTime();
   activeKey.value = nowTime;
   panes.value.push({
@@ -937,7 +702,7 @@ const add = () => {
   });
 };
 
-const remove = (targetKeyStr: string) => {
+const removeTab = (targetKeyStr: string) => {
   const targetKey = parseInt(targetKeyStr)
   let lastIndex = 0;
   panes.value.forEach((pane, i) => {
@@ -971,9 +736,9 @@ const getActive = (targetKeyStr?: string | number): any => {
 
 const onEdit = (targetKey: string | MouseEvent, action: string) => {
   if (action === 'add') {
-    add();
+    addTab();
   } else {
-    remove(targetKey as string);
+    removeTab(targetKey as string);
   }
   contentRefSetFocus(50);
 };
@@ -988,7 +753,6 @@ const onChange = ({content, format}: any) => {
 
 
 watch(activeKey, () => {
-  // setValue(getActive()?.content, false)
   contentRefSetFocus(50);
 })
 const windowCopy = (text: string) => {
@@ -1017,68 +781,13 @@ const archiveCopy = () => {
 const formDataCopy = () => {
   const text = getSelectContentData()
   try {
-    const archiveText = getFormDataString(text)
+    const archiveText = formEncode(text)
     windowCopy(archiveText)
   } catch (e) {
     message.error('转码失败');
   }
   contentRefSetFocus()
 }
-
-function resolveObject(name: string, object: any) {
-  let stringToReturn = '';
-  for (const [key, value] of Object.entries(object)) {
-    if (value instanceof Object) {
-      stringToReturn += resolveObject(`${name}[${key}]`, value);
-      continue;
-    }
-    if (value instanceof Array) {
-      stringToReturn += resolveArray(`${name}[${key}]`, value);
-      continue;
-    }
-    stringToReturn += `${name}[${key}]:${value}\n`
-  }
-  return stringToReturn;
-}
-
-function resolveArray(name: string, array: any[]) {
-  let stringToReturn = '';
-  array.forEach((value, index) => {
-    if (value instanceof Object) {
-      stringToReturn += resolveObject(`${name}[${index}]`, value);
-      return;
-    }
-    if (value instanceof Array) {
-      stringToReturn += resolveArray(`${name}[${index}]`, value);
-      return;
-    }
-    stringToReturn += `${name}[${index}]:${value}\n`
-  })
-  return stringToReturn;
-}
-
-const getFormDataString = (jsonValues: string) => {
-  const jsonObject = jsonParse(jsonValues);
-  let formDataString = '';
-  for (const [key, value] of Object.entries(jsonObject)) {
-    if (value instanceof Object) {
-      formDataString += resolveObject(key, value);
-      continue;
-    }
-    if (value instanceof Array) {
-      formDataString += resolveArray(key, value);
-    }
-    formDataString += `${key}:${value}\n`
-  }
-  return formDataString
-}
-// const paste = () => {
-//   // @ts-ignore
-//   window.getClipboardContent && window.getClipboardContent((text: string) => {
-//     setValue(text)
-//   }, () => {
-//   })
-// }
 
 const pasteOnly = () => {
   // @ts-ignore
@@ -1096,82 +805,41 @@ const pasteAndFormat = () => {
   }, () => {
   })
 }
-// const escape = () => {
-//   const text = contentRefCopy()
-//   if (!text) {
-//     return
-//   }
-//   let res = escapeString(text)
-//   if (res == text) {
-//     return
-//   }
-//   add()
-//   setValue(res)
-//   contentRefSetFocus()
-// }
-// const escapeCursor = () => {
-//   const text = contentRefCursorText()
-//   if (!text) {
-//     return
-//   }
-//
-//   let jsonText = text.substring(1, text.length - 1);
-//   if (!jsonText) {
-//     return
-//   }
-//   let replaceText = escapeString(jsonText)
-//   try {
-//     JSON.parse(replaceText)
-//   } catch (e) {
-//     return
-//   }
-//
-//   let content = getActive().content;
-//   if (!content) {
-//     return
-//   }
-//
-//   const newContent = content.replace(text, replaceText)
-//   if (!newContent || newContent == content) {
-//     return
-//   }
-//
-//   setValue(newContent)
-// }
+
 const handleTabMenuClick = (clickInfo: any) => {
   switch (clickInfo.key) {
-    case '1':
+    case 'closeLeft':
       panes.value.map((value: any) => {
         if (value.key < activeKey.value && value.favorite !== true && value.key > 0) {
-          remove(value.key)
+          removeTab(value.key)
         }
       })
       break;
-    case '2':
+    case 'closeRight':
       panes.value.map((value: any) => {
         if (value.key > activeKey.value && value.favorite !== true && value.key > 0) {
-          remove(value.key)
+          removeTab(value.key)
         }
       })
       break;
-    case '3':
+    case 'closeOther':
       panes.value.map((value: any) => {
         if (value.key != activeKey.value && value.favorite !== true && value.key > 0) {
-          remove(value.key)
+          removeTab(value.key)
         }
       })
       break;
-    case '4':
+    case 'closeAll':
       panes.value.map((value: any) => {
         if (value.key > 0 && value.favorite !== true) {
-          remove(value.key)
+          removeTab(value.key)
         }
       })
       break;
-    case '5':
+    case 'forceCloseAll':
       panes.value.map((value: any) => {
         if (value.key > 0) {
-          remove(value.key)
+          removeTab(value.key)
         }
       })
       break;
@@ -1284,10 +952,10 @@ const handleKeyDown = (e: KeyboardEvent) => {
         e.preventDefault()
         return
       }
-      remove(activeKey.value.toString())
+      removeTab(activeKey.value.toString())
       break;
     case 'n':
-      add()
+      addTab()
       setTimeout(() => {
         pasteAndFormat()
       }, 30)
@@ -1309,10 +977,10 @@ const handleKeyDown = (e: KeyboardEvent) => {
       setTimeout(() => {
         format(matchText)
       }, 30)
-      add()
+      addTab()
       break;
     case 't':
-      add()
+      addTab()
       break;
     case 'l':
       if (activeKey.value == 0) {
@@ -1328,10 +996,10 @@ const handleKeyDown = (e: KeyboardEvent) => {
       getDecode()
       break;
     case '2':
-      urlDecode()
+      urlDecode111()
       break;
     case '3':
-      base64Decode()
+      base64Decode111()
       break;
     case '4':
       unserializeDecode()
@@ -1340,10 +1008,10 @@ const handleKeyDown = (e: KeyboardEvent) => {
       timestampDecode()
       break;
     case '6':
-      unicodeDecode()
+      unicodeDecode111()
       break;
     case '7':
-      utf8Decode()
+      utf8Decode111()
       break;
     case '8':
       formDataCopy()
@@ -1390,19 +1058,19 @@ onMounted(() => {
         <a-dropdown>
           <template #overlay>
             <a-menu @click="handleTabMenuClick">
-              <a-menu-item key="1">
+              <a-menu-item key="closeLeft">
                 关闭左侧
               </a-menu-item>
-              <a-menu-item key="2">
+              <a-menu-item key="closeRight">
                 关闭右侧
               </a-menu-item>
-              <a-menu-item key="3">
+              <a-menu-item key="closeOther">
                 关闭其他
               </a-menu-item>
-              <a-menu-item key="4">
+              <a-menu-item key="closeAll">
                 关闭全部
               </a-menu-item>
-              <a-menu-item key="5">
+              <a-menu-item key="forceCloseAll">
                 强制关闭全部
               </a-menu-item>
             </a-menu>
@@ -1460,11 +1128,11 @@ onMounted(() => {
         <!--      <a-button @click="showModal">历史</a-button>-->
         <div>
           <a-button class="operateBtnSmall" @click="getDecode">{{ showAltAlert ? '1' : '' }} get</a-button>
-          <a-button class="operateBtnSmall" @click="urlDecode">{{ showAltAlert ? '2' : '' }} url</a-button>
-          <a-button class="operateBtn" @click="base64Decode">{{ showAltAlert ? '3' : '' }} base64</a-button>
+          <a-button class="operateBtnSmall" @click="urlDecode111">{{ showAltAlert ? '2' : '' }} url</a-button>
+          <a-button class="operateBtn" @click="base64Decode111">{{ showAltAlert ? '3' : '' }} base64</a-button>
           <a-button class="operateBtn" @click="unserializeDecode">{{ showAltAlert ? '4' : '' }} serialize</a-button>
           <a-button class="operateBtn" @click="timestampDecode">{{ showAltAlert ? '5' : '' }} timestamp</a-button>
-          <a-button class="operateBtn" @click="unicodeDecode">{{ showAltAlert ? '6' : '' }} unicode</a-button>
+          <a-button class="operateBtn" @click="unicodeDecode111">{{ showAltAlert ? '6' : '' }} unicode</a-button>
           <!--          <a-button class="operateBtn" @click="utf8Decode">{{showAltAlert ? '}':''}}7 utf8</a-button>-->
           <a-button class="operateBtn" @click="formDataCopy">{{ showAltAlert ? '8' : '' }} 复制form</a-button>
           <a-button class="operateBtn" @click="archiveCopy">{{ showAltAlert ? '9' : '' }} 复制压缩</a-button>

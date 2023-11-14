@@ -6,7 +6,6 @@ export enum supportEditTemplateType {
 export enum supportAutoType {
     get_param,
     utf8,
-    unicode,
     unserialize
 }
 
@@ -72,3 +71,14 @@ export function getNextEnumValue<T extends Record<string, string | number>>(enum
     }
 }
 
+export interface IEncoder {
+    name: string;
+
+    encode(input: unknown, config?: unknown): unknown;
+
+    decode(input: unknown, config?: unknown): unknown;
+
+    decodeToJson(input: unknown): unknown;
+
+    check(input: string): boolean;
+}
