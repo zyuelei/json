@@ -6,15 +6,15 @@ import 'brace/ext/searchbox';
 import 'brace/ext/language_tools';
 import 'brace/mode/json';
 import 'brace/theme/monokai';
-import {config, editContentMy, rangeMy} from "../interface";
+import {systemConfig, editContentMy, rangeMy} from "../interface";
 
 const editorDiv = ref();
 const editor = ref();
 
 
-const props = defineProps<{ config: config }>()
+const props = defineProps<{ config: systemConfig }>()
 const propsRle = reactive(props)
-const propsRef = toRefs<{ config: config }>(propsRle)
+const propsRef = toRefs<{ config: systemConfig }>(propsRle)
 watchEffect(() => {
   if (editor.value) {
     typeof propsRef.config.value.fontSize == 'number' && editor.value.setFontSize(propsRef.config.value.fontSize + 'px') // 设置文字大小

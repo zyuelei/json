@@ -9,7 +9,7 @@ export enum supportAutoType {
     unserialize
 }
 
-export interface config {
+export interface systemConfig {
     tabSize?: number
     fontSize?: number
     useWrap?: boolean

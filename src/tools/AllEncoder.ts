@@ -21,6 +21,10 @@ export function jsonDecode(value: any) {
     return JsonEncode.decode(value);
 }
 
+export function jsonArchive(value: string) {
+    return JsonEncode.archive(value);
+}
+
 export function unicodeDecode(str: string) {
     return UnicodeEncode.decode(str)
 }

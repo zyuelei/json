@@ -13,7 +13,6 @@ import dayjs from 'dayjs'
 import BraceTemplate from "./BraceTemplate.vue";
 import MonacoTemplate from "./MonacoTemplate.vue";
 import {
-  config,
   ContentSelectType,
   editContentMy,
   getNextEnumValue,
@@ -21,7 +20,8 @@ import {
   panesInterface,
   rangeMy,
   supportAutoType,
-  supportEditTemplateType
+  supportEditTemplateType,
+  systemConfig
 } from "../interface";
 import {DownOutlined, LockOutlined, SettingOutlined, UnlockOutlined} from '@ant-design/icons-vue';
 import {message, Modal} from 'ant-design-vue';
@@ -30,6 +30,7 @@ import {
   escapeDecode,
   formEncode,
   getParamDecode,
+  jsonArchive,
   jsonDecode,
   jsonEncode,
   serializeDecode,
@@ -48,7 +49,7 @@ const theme = ref(props.theme)
 const childElementRefs = ref();
 const tabsContainerRef = ref();
 const showAltAlert = ref(false)
-const contentConfig = reactive<config>({
+const contentConfig = reactive<systemConfig>({
   fontSize: 14,
   tabSize: 4,
   printMargin: false,
@@ -162,23 +163,6 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   return result;
 }
 //
-const jsonArchive = (input: string) => {
-  let result = [];
-  let quoteChar: any = false;
-  input = input.replace(/\n/g, " ");
-
-  for (let currentChar of input) {
-    if (quoteChar && currentChar === quoteChar && !result[result.length - 1].endsWith("\\")) {
-      quoteChar = false;
-    } else if (!quoteChar && (currentChar === '"' || currentChar === "'")) {
-      quoteChar = currentChar;
-    } else if (!quoteChar && (currentChar === " " || currentChar === " " || currentChar === "\t")) {
-      currentChar = "";
-    }
-    result.push(currentChar);
-  }
-  return result.join("");
-};
 
 type formatParam = {
   formatOrder?: supportAutoType[],

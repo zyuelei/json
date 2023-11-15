@@ -11,10 +11,8 @@ import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
 // import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
 // // @ts-ignore
 // import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
-import {onBeforeUnmount, onMounted, ref} from "vue";
-import {reactive, toRefs, watchEffect} from "vue";
-import {config, editContentMy, rangeMy} from "../interface";
-import {IRange} from "monaco-editor";
+import {onBeforeUnmount, onMounted, reactive, ref, toRefs, watchEffect} from "vue";
+import {systemConfig, editContentMy, rangeMy} from "../interface";
 import IDimension = monaco.editor.IDimension;
 
 const editorDiv = ref();
@@ -42,9 +40,9 @@ let editor: any;
 }
 
 const emit = defineEmits(['onChange', 'format'])
-const props = defineProps<{ config: config }>()
+const props = defineProps<{ config: systemConfig }>()
 const propsRle = reactive(props)
-const propsRef = toRefs<{ config: config }>(propsRle)
+const propsRef = toRefs<{ config: systemConfig }>(propsRle)
 watchEffect(() => {
   if (editorInit.value) {
     let newConfig: any = {}
@@ -94,16 +92,6 @@ const init = () => {
         emit('format');
       }
   );
-// editor.onDidChangeCursorPosition(event => {
-//   const position = event.position;
-//   const lineNumber = position.lineNumber;
-//   const column = position.column;
-//   cursorLastPosition.value.lineNumber = position.lineNumber;
-//   cursorLastPosition.value.column = position.column;
-//   console.log("c:", lineNumber, column);
-// });
-
-// window.addEventListener('resize', handleResize);
 }
 
 
@@ -177,7 +165,7 @@ const toRange = ({startLine, endLine, startColumn, endColumn}: rangeMy) => {
     endColumn: endColumn,
   }
 }
-const replace = (range: IRange, newText: string) => {
+const replace = (range: monaco.IRange, newText: string) => {
   editor.pushUndoStop()
   editor.getModel().pushEditOperations(
       [],
