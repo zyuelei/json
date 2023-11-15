@@ -160,6 +160,9 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
     }
   }
 
+  if (!hasJson) {
+    result = unicodeDecode(result)
+  }
   return result;
 }
 //
