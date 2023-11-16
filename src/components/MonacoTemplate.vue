@@ -5,14 +5,8 @@ import * as monaco from 'monaco-editor'
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 // @ts-ignore
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
-// // @ts-ignore
-// import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker'
-// // @ts-ignore
-// import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
-// // @ts-ignore
-// import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 import {onBeforeUnmount, onMounted, reactive, ref, toRefs, watchEffect} from "vue";
-import {systemConfig, editContentMy, rangeMy} from "../interface";
+import {editContentMy, rangeMy, systemConfig} from "../interface";
 import IDimension = monaco.editor.IDimension;
 
 const editorDiv = ref();

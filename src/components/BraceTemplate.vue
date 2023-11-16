@@ -6,7 +6,7 @@ import 'brace/ext/searchbox';
 import 'brace/ext/language_tools';
 import 'brace/mode/json';
 import 'brace/theme/monokai';
-import {systemConfig, editContentMy, rangeMy} from "../interface";
+import {editContentMy, rangeMy, systemConfig} from "../interface";
 
 const editorDiv = ref();
 const editor = ref();

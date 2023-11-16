@@ -2,32 +2,25 @@
 import Json from "./Json.vue";
 import {ref} from "vue";
 import {theme} from 'ant-design-vue';
+import {windowIsDark, windowPluginReady} from "../tools/windowTool.ts";
 
 const themeVal = ref('light');
+const showSon = ref(false)
 
 const toggleTheme = (themeNew: any) => {
   // theme.value === 'light' ? 'dark' : 'light'
   themeVal.value = themeNew;
 };
 
-const showSon = ref(false)
-
-// @ts-ignore
-if (window.isDark && window.isDark()) {
+if (windowIsDark()) {
   toggleTheme('dark')
 } else {
   toggleTheme('light')
 }
-// @ts-ignore
-if (typeof utools != 'undefined') {
-// @ts-ignore
-  utools.onPluginReady(() => {
-    showSon.value = true;
-  })
-} else {
-  // toggleTheme('dark')
-  showSon.value = true;
-}
+
+windowPluginReady(() => {
+  showSon.value = true
+});
 
 </script>
 

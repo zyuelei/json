@@ -40,6 +40,7 @@ import {
   urlDecode,
   utf8Decode
 } from "../tools/AllEncoder";
+import {windowCopy, windowGetClipboardContent, windowIsMac, windowPluginEnter} from "../tools/windowTool.ts";
 
 const emit = defineEmits(['changeTheme'])
 const props = defineProps<{
@@ -61,9 +62,7 @@ watchEffect(() => {
   contentConfig.theme = theme.value
   emit('changeTheme', theme.value);
 })
-// @ts-ignore
-window.onPluginEnter && window.onPluginEnter(({payload, type, code}: any) => {
-  // console.info('in', payload, type, code);
+windowPluginEnter(({payload, type, code}: any) => {
   switch (code) {
     case "json_format":
       if (type === 'regex') {
@@ -87,7 +86,6 @@ window.onPluginEnter && window.onPluginEnter(({payload, type, code}: any) => {
   }
   contentRefSetFocus(50)
 })
-
 
 const panes = ref<panesInterface[]>([
   {title: 'default', key: 0, closable: false, favorite: true, content: '', time: 0, render: contentConfig.render},
@@ -745,10 +743,7 @@ const onChange = ({content, format}: any) => {
 watch(activeKey, () => {
   contentRefSetFocus(50);
 })
-const windowCopy = (text: string) => {
-  // @ts-ignore
-  window.copyContent && window.copyContent(text)
-}
+
 
 const format = (text ?: string) => {
   const formatText = text ? text : getSelectContentData()
@@ -781,20 +776,16 @@ const formDataCopy = () => {
 }
 
 const pasteOnly = () => {
-  // @ts-ignore
-  window.getClipboardContent && window.getClipboardContent((text: string) => {
+  windowGetClipboardContent(function (text: string) {
     contentRefInsert(text)
     contentRefSetFocus()
-  }, () => {
-  })
+  });
 }
 const pasteAndFormat = () => {
-  // @ts-ignore
-  window.getClipboardContent && window.getClipboardContent((text: string) => {
+  windowGetClipboardContent(function (text: string) {
     format(text)
     contentRefSetFocus()
-  }, () => {
-  })
+  });
 }
 
 const handleTabMenuClick = (clickInfo: any) => {
@@ -916,8 +907,7 @@ const handleResize = () => {
 
 const handleKeyDown = (e: KeyboardEvent) => {
   const key = e.key.toLowerCase()
-  // @ts-ignore
-  const isMac = window.isMacOS && window.isMacOS()
+  const isMac = windowIsMac()
   const listenKey = isMac ? e.metaKey || e.altKey : e.ctrlKey || e.altKey;
   if (!listenKey) {
     return;
