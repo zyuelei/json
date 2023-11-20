@@ -16,7 +16,7 @@ export function windowIsMac(): boolean {
     return window.isMacOS && window.isMacOS()
 }
 
-export function windowPluginEnter(callback: any) {
+export function windowPluginEnter(callback: (param: { payload: string, type: string, code: string }) => void) {
     // @ts-ignore
     window.onPluginEnter && window.onPluginEnter(({payload, type, code}: any) => {
         callback({payload, type, code})

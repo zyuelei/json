@@ -62,7 +62,7 @@ watchEffect(() => {
   contentConfig.theme = theme.value
   emit('changeTheme', theme.value);
 })
-windowPluginEnter(({payload, type, code}: any) => {
+windowPluginEnter(({payload, type, code}) => {
   switch (code) {
     case "json_format":
       if (type === 'regex') {
@@ -94,12 +94,15 @@ const activeKey = ref(panes.value[0].key);
 const activeIndex = computed(() => {
   return panes.value.findIndex(obj => obj.key === activeKey.value)
 })
+const activeData = computed(() => {
+  return panes.value[activeIndex.value]
+})
 
 const saveActiveValue = (str: string) => {
-  getActive().content = str
+  activeData.value.content = str
 }
 const favorite = () => {
-  getActive().favorite = !getActive().favorite
+  activeData.value.favorite = !activeData.value.favorite
 }
 const getFormatData = (str: string, formatParam?: formatParam) => {
   const order = formatParam?.formatOrder ?? []
@@ -199,9 +202,8 @@ const contentRefInsert = (text: string) => {
   return getActiveEdit().insert(text)
 }
 
-
 const findLineSelectInfo = (contentInfo: editContentMy): matchRangeMy | null => {
-  const str = getSubstringByRange(getActive().content, contentInfo)
+  const str = getSubstringByRange(activeData.value.content, contentInfo)
   if (!str) {
     return null
   }
@@ -230,7 +232,7 @@ const findLineSelectInfo = (contentInfo: editContentMy): matchRangeMy | null => 
 }
 
 const findLineQuotesInfo = (contentInfo: editContentMy): matchRangeMy | null => {
-  let str = getRowData(getActive().content, contentInfo.positionLine)
+  let str = getRowData(activeData.value.content, contentInfo.positionLine)
   let positionColumn = contentInfo.positionColumn - 2
   let startIndex = -1;
   let endIndex = -1;
@@ -292,7 +294,7 @@ const inQuotes = (str: string, startColumn: number, endColumn: number, allMatchR
   return str[startColumn - 2] == '"' && str[endColumn - 1] == '"'
 }
 const findLineNumberInfo = (contentInfo: editContentMy): matchRangeMy | null => {
-  let str = getRowData(getActive().content, contentInfo.positionLine)
+  let str = getRowData(activeData.value.content, contentInfo.positionLine)
   let positionColumn = contentInfo.positionColumn - 2
   let startIndex = -1;
   let endIndex = -1;
@@ -399,7 +401,7 @@ function getContentCursorOrAll(type: ContentSelectType) {
       endLine: contentInfo.lastLine,
       startColumn: contentInfo.firstColumn,
       endColumn: contentInfo.lastColumn,
-      matchText: getActive().content as string,
+      matchText: activeData.value.content,
       newContent: function (str) {
         const jsonStr = isJson(str, true);
         if (jsonStr) {
@@ -484,8 +486,7 @@ function replaceNewContent(contentInfo: editContentMy, selectInfo: matchRangeMy,
   }
   newContent = typeof newContent == 'object' ? jsonEncode(newContent) : newContent;
   if (newContentInfo.isJson && noFormat !== true) {
-
-    setValue(getSubstringByTwoRange(getActive().content, newContent, {
+    const rangeData = getSubstringByTwoRange(activeData.value.content, newContent, {
       startLine: contentInfo.firstLine,
       startColumn: contentInfo.firstColumn,
       endLine: selectInfo.startLine,
@@ -495,7 +496,8 @@ function replaceNewContent(contentInfo: editContentMy, selectInfo: matchRangeMy,
       startColumn: selectInfo.endColumn,
       endLine: contentInfo.lastLine,
       endColumn: contentInfo.lastColumn
-    }))
+    });
+    setValue(rangeData)
   } else {
     getActiveEdit().replace(getActiveEdit().toRange(selectInfo), newContent);
   }
@@ -707,20 +709,6 @@ const removeTab = (targetKeyStr: string) => {
     }
   }
 };
-const getActive = (targetKeyStr?: string | number): any => {
-  if (targetKeyStr === undefined) {
-    targetKeyStr = activeKey.value
-  }
-  const targetKey = typeof targetKeyStr === "string" ? parseInt(targetKeyStr) : targetKeyStr
-  let restult = {}
-  panes.value.map((value) => {
-    if (value.key === targetKey) {
-      restult = value
-      return
-    }
-  })
-  return restult
-}
 
 const onEdit = (targetKey: string | MouseEvent, action: string) => {
   if (action === 'add') {
@@ -835,12 +823,12 @@ const handleConfigMenuClick = (clickInfo: any) => {
       contentConfig.useWrap = !contentConfig.useWrap;
       break;
     case "switchCode":
-      if (getActive().content) {
+      if (activeData.value.content) {
         message.error('有数据无法切换');
         return
       }
-      const newRender = getNextEnumValue(supportEditTemplateType, getActive().render)
-      getActive().render = newRender
+      const newRender = getNextEnumValue(supportEditTemplateType, activeData.value.render)
+      activeData.value.render = newRender
       contentConfig.render = newRender
       break;
     case "switchTheme":
@@ -929,7 +917,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
       break;
     case 'w':
     case 'q':
-      if (activeKey.value == 0 || getActive().favorite) {
+      if (activeKey.value == 0 || activeData.value.favorite) {
         e.preventDefault()
         return
       }
@@ -1033,8 +1021,8 @@ onMounted(() => {
     <a-tabs class="tabs" v-model:activeKey="activeKey" type="editable-card" @edit="onEdit">
       <template #rightExtra>
         <a-button style="height: 100%" :disabled="activeKey == 0" @click="favorite">
-          <LockOutlined v-if="!getActive().favorite"/>
-          <UnlockOutlined v-if="getActive().favorite"/>
+          <LockOutlined v-if="!activeData.favorite"/>
+          <UnlockOutlined v-if="activeData.favorite"/>
         </a-button>
         <a-dropdown>
           <template #overlay>
