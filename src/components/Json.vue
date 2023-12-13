@@ -23,8 +23,8 @@ import {
   supportEditTemplateType,
   systemConfig
 } from "../interface";
-import {DownOutlined, LockOutlined, SettingOutlined, UnlockOutlined} from '@ant-design/icons-vue';
-import {message, Modal} from 'ant-design-vue';
+import {DownOutlined, LockOutlined, SettingOutlined, UnlockOutlined, EditOutlined} from '@ant-design/icons-vue';
+import {message, Modal, Input} from 'ant-design-vue';
 import {
   base64Decode,
   escapeDecode,
@@ -37,8 +37,7 @@ import {
   timeDecode,
   timeEncode,
   unicodeDecode,
-  urlDecode,
-  utf8Decode
+  urlDecode
 } from "../tools/AllEncoder";
 import {windowCopy, windowGetClipboardContent, windowIsMac, windowPluginEnter} from "../tools/windowTool.ts";
 
@@ -575,25 +574,7 @@ const unserializeDecode = () => {
     contentRefSetFocus()
   }
 }
-const utf8Decode111 = () => {
-  let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
-  const parseText = selectInfo.matchText;
-  if (!parseText) {
-    contentRefSetFocus()
-    return
-  }
 
-  try {
-    const newData = utf8Decode(parseText)
-    if (newData == parseText) {
-      contentRefSetFocus()
-      return
-    }
-    replaceNewContent(contentInfo, selectInfo, newData)
-  } catch (e) {
-  }
-  contentRefSetFocus()
-}
 const unicodeDecode111 = () => {
   let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
   const parseText = selectInfo.matchText;
@@ -847,6 +828,7 @@ const handleConfigMenuClick = (clickInfo: any) => {
         "新建tab并粘贴【选中处/光标处】内容格式化：ctrl + j / alt + j",
         "切换tab：ctrl + tab  /  ctrl + shift + tab",
         "关闭tab：ctrl + q / alt + q",
+        "重命名tab：双击shift",
         "锁定/解锁tab：锁定后无法通过[关闭tab]快捷键关闭当前tab 快捷键：ctrl + shift + L / alt + shift + L",
         "get：在【光标处/全局】解析get参数，并尝试转为json 示例：a=1&b=1 快捷键：alt + 1",
         "url：在【光标处/全局】url_decode，并尝试转为json 示例：%7B%22a%22%3A%221%22%7D 快捷键：alt + 2",
@@ -854,7 +836,6 @@ const handleConfigMenuClick = (clickInfo: any) => {
         "serialize：在【光标处/全局】进行unserialize，并尝试转为json 快捷键：alt + 4",
         "timestamp：在【光标处/全局】进行【10位时间戳/y-m-d H:i:s】格式的转换,若无法转换则会插入当前时间的10位时间戳 快捷键：alt + 5",
         "unicode：在【光标处/全局】进行unicode_decode解码，并尝试转为json 示例 \\x22 \\u0031 快捷键：alt + 6",
-        "utf8：在【光标处/全局】进行utf8_decode解码。此功能由于大部分可被[unicode]替代所以无界面按钮且未来可能会移除 快捷键：alt + 7",
         "复制form：在【选中处/全局】复制key:value格式的json数据，用于postman等软件的导入 快捷键：alt + 8",
         "复制压缩：在【选中处/全局】复制去除回车、空格后的压缩数据 快捷键：alt + 9",
         "仅粘贴：在【选中处/全局】粘贴，并不做格式化操作 快捷键：alt + 0",
@@ -893,16 +874,26 @@ const handleResize = () => {
   })
 };
 
+let lastAltKeyPressTime = 0;
+const altKeyDoublePressThreshold = 300; // 双击间隔阈值，例如300毫秒
 const handleKeyDown = (e: KeyboardEvent) => {
   const key = e.key.toLowerCase()
   const isMac = windowIsMac()
   const listenKey = isMac ? e.metaKey || e.altKey : e.ctrlKey || e.altKey;
   if (!listenKey) {
+    if (e.shiftKey && !e.repeat) {
+      const currentTime = Date.now();
+      if (currentTime - lastAltKeyPressTime < altKeyDoublePressThreshold) {
+        // 如果两次Alt按键事件的间隔小于阈值，则认为是双击
+        renameShowModel()
+        // 可以在这里触发你想要的逻辑
+      }
+      lastAltKeyPressTime = currentTime; // 更新最后按键时间
+    }
     return;
   }
   switch (key) {
     case 'alt':
-      showAltAlert.value = true;
       break;
     case 'tab':
       let nextKey;
@@ -979,9 +970,6 @@ const handleKeyDown = (e: KeyboardEvent) => {
     case '6':
       unicodeDecode111()
       break;
-    case '7':
-      utf8Decode111()
-      break;
     case '8':
       formDataCopy()
       break;
@@ -990,6 +978,8 @@ const handleKeyDown = (e: KeyboardEvent) => {
       break;
     case '0':
       pasteOnly()
+      break;
+    case 'shift':
       break;
     default:
       return;
@@ -1012,8 +1002,56 @@ onMounted(() => {
   window.addEventListener('keyup', handleKeyUp)
   window.addEventListener('keydown', handleKeyDown)
   // tabindex="0" @keydown="handleKeyDown" @keyup="handleKeyUp"
+  contentRefSetFocus();
 });
 
+let modal: any;
+
+function renameShowModel() {
+  const inputValue = ref('');
+  const inputRef = ref<InstanceType<typeof HTMLInputElement> | null>(null);
+  const destroy = () => {
+    modal && modal.destroy();
+  }
+  const done = () => {
+    activeData.value.title = inputValue.value
+    destroy();
+    contentRefSetFocus();
+  }
+  const handleKeyPress = (event: any) => {
+    // 检查是否是回车键
+    if (event.key === 'Enter') {
+      done();
+    }
+  };
+  const inputComponent = {
+    render() {
+      return h(Input, {
+        ref: inputRef,
+        modelValue: inputValue.value, // 绑定输入值
+        onInput: (event: any) => {    // 使用 onInput 代替 onUpdate:modelValue
+          inputValue.value = event.target.value;  // 更新输入值
+        },
+        onKeyup: handleKeyPress,
+      });
+    },
+    mounted() {
+      // 当组件挂载完成后，输入框自动聚焦
+      nextTick(() => {
+        setTimeout(() => {
+          inputRef.value?.focus();
+        }, 10)
+      })
+    }
+  };
+  destroy()
+  modal = Modal.info({
+    title: '修改tab名',
+    content: h(inputComponent),
+    maskClosable: true,
+    onOk: done,
+  });
+}
 </script>
 
 <template>
@@ -1086,15 +1124,14 @@ onMounted(() => {
       </a-tab-pane>
     </a-tabs>
 
-    <a-space :size="4" style="width:100%;justify-content:end;padding: 2px 14px 2px 14px;">
+    <a-space :size="4" style="width:100%;justify-content:end;padding: 2px 14px 2px 4px;">
 
-      <div style="width:100%;display: flex;flex-direction: row;justify-content: end">
-        <!--        <a-button @click="format()">格式化</a-button>-->
-        <!--      <a-button @click="paste">粘贴</a-button>-->
-        <!--      <a-button @click="copy">复制</a-button>-->
-        <!--      <a-button @click="escape">去除转义</a-button>-->
-        <!--      <a-button @click="escapeCursor">光标处去转义</a-button>-->
-        <!--      <a-button @click="showModal">历史</a-button>-->
+      <div style="width:100%;display: flex;flex-direction: row;justify-content: space-between">
+        <div>
+          <a-button style="height: 100%" @click="renameShowModel">
+            <EditOutlined/>
+          </a-button>
+        </div>
         <div>
           <a-button class="operateBtnSmall" @click="getDecode">{{ showAltAlert ? '1' : '' }} get</a-button>
           <a-button class="operateBtnSmall" @click="urlDecode111">{{ showAltAlert ? '2' : '' }} url</a-button>
@@ -1102,7 +1139,6 @@ onMounted(() => {
           <a-button class="operateBtn" @click="unserializeDecode">{{ showAltAlert ? '4' : '' }} serialize</a-button>
           <a-button class="operateBtn" @click="timestampDecode">{{ showAltAlert ? '5' : '' }} timestamp</a-button>
           <a-button class="operateBtn" @click="unicodeDecode111">{{ showAltAlert ? '6' : '' }} unicode</a-button>
-          <!--          <a-button class="operateBtn" @click="utf8Decode">{{showAltAlert ? '}':''}}7 utf8</a-button>-->
           <a-button class="operateBtn" @click="formDataCopy">{{ showAltAlert ? '8' : '' }} 复制form</a-button>
           <a-button class="operateBtn" @click="archiveCopy">{{ showAltAlert ? '9' : '' }} 复制压缩</a-button>
           <a-button class="operateBtnSmall" @click="pasteOnly">{{ showAltAlert ? '0' : '' }} 仅粘贴</a-button>
