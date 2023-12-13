@@ -1005,16 +1005,18 @@ onMounted(() => {
   contentRefSetFocus();
 });
 
-let modal: any;
+let renameModal: any;
 
 function renameShowModel() {
   const inputValue = ref('');
   const inputRef = ref<InstanceType<typeof HTMLInputElement> | null>(null);
   const destroy = () => {
-    modal && modal.destroy();
+    renameModal && renameModal.destroy();
   }
   const done = () => {
-    activeData.value.title = inputValue.value
+    if (inputValue.value) {
+      activeData.value.title = inputValue.value
+    }
     destroy();
     contentRefSetFocus();
   }
@@ -1045,7 +1047,7 @@ function renameShowModel() {
     }
   };
   destroy()
-  modal = Modal.info({
+  renameModal = Modal.info({
     title: '修改tab名',
     content: h(inputComponent),
     maskClosable: true,
