@@ -6,7 +6,10 @@ export enum supportEditTemplateType {
 export enum supportAutoType {
     get_param,
     utf8,
-    unserialize
+    unserialize,
+    archive,
+    extractJson,
+    unicode,
 }
 
 export interface systemConfig {
@@ -16,6 +19,7 @@ export interface systemConfig {
     printMargin?: boolean
     theme?: string
     render: supportEditTemplateType,
+    autoFormat: supportAutoType[]
 }
 
 export interface rangeMy {

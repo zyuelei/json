@@ -53,6 +53,22 @@ window.isMacOS = () => {
     })
 }
 
+window.setContent = (key, value) => {
+    return toolsFun(() => {
+        utools.dbStorage.setItem(key, value)
+    }, () => {
+        localStorage.setItem(key, JSON.stringify(value));
+    })
+}
+
+window.getContent = (key) => {
+    return toolsFun(() => {
+        return utools.dbStorage.getItem(key)
+    }, () => {
+        return JSON.parse(localStorage.getItem(key));
+    })
+}
+
 function getOperatingSystem() {
     var os = "Unknown OS";
     if (navigator.appVersion.indexOf("Win") !== -1) os = "Windows";

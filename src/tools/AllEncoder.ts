@@ -64,3 +64,12 @@ export function escapeDecode(json: unknown) {
 export function formEncode(jsonValues: Record<any, any>) {
     return FormEncode.encode(jsonValues)
 }
+
+export function extractJson(input: string): string {
+    // 正则匹配JSON字符串的开始和结束位置
+    const jsonPattern = /{.*}|\[.*]/;
+    const match = input.match(jsonPattern);
+    const result = match ? match[0] : input;
+    return result
+}
+

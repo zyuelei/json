@@ -6,6 +6,7 @@
   onMounted,
   reactive,
   ref,
+  toRaw,
   watch,
   watchEffect
 } from 'vue';
@@ -28,6 +29,7 @@ import {Input, message, Modal} from 'ant-design-vue';
 import {
   base64Decode,
   escapeDecode,
+  extractJson,
   formEncode,
   getParamDecode,
   jsonArchive,
@@ -39,7 +41,14 @@ import {
   unicodeDecode,
   urlDecode
 } from "../tools/AllEncoder";
-import {windowCopy, windowGetClipboardContent, windowIsMac, windowPluginEnter} from "../tools/windowTool.ts";
+import {
+  windowCopy,
+  windowGetClipboardContent,
+  windowGetContent,
+  windowIsMac,
+  windowPluginEnter,
+  windowSetContent
+} from "../tools/windowTool.ts";
 import {useDoubleShiftDetector} from "../tools/detector";
 
 const emit = defineEmits(['changeTheme'])
@@ -50,18 +59,28 @@ const theme = ref(props.theme)
 const childElementRefs = ref();
 const tabsContainerRef = ref();
 const showAltAlert = ref(false)
-const contentConfig = reactive<systemConfig>({
+const systemConfig = windowGetContent('config');
+const config: systemConfig = systemConfig ? systemConfig : {
   fontSize: 14,
   tabSize: 4,
   printMargin: false,
   useWrap: false,
-  theme: theme.value,
+  autoFormat: [supportAutoType.extractJson, supportAutoType.archive],
   render: supportEditTemplateType.monaco, // brace  moncaco
-})
+};
+config.theme = theme.value
+const contentConfig = reactive<systemConfig>(config)
 watchEffect(() => {
   contentConfig.theme = theme.value
   emit('changeTheme', theme.value);
 })
+
+watch(contentConfig, () => {
+  windowSetContent('config', toRaw(contentConfig))
+}, {
+  deep: true
+});
+
 windowPluginEnter(({payload, type, code}) => {
   switch (code) {
     case "json_format":
@@ -105,7 +124,7 @@ const favorite = () => {
   activeData.value.favorite = !activeData.value.favorite
 }
 const getFormatData = (str: string, formatParam?: formatParam) => {
-  const order = formatParam?.formatOrder ?? []
+  const order = formatParam?.formatOrder ?? contentConfig.autoFormat
   const format = formatParam?.formatOpen ?? true;
   if (!format) {
     return str
@@ -134,10 +153,25 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
     }
   }
 
+  let dealResult = result;
+  try {
+    if (!hasJson && order.includes(supportAutoType.archive as never)) {
+      dealResult = jsonArchive(dealResult)
+    }
+  } catch (e) {
+  }
+
+  try {
+    if (!hasJson && order.includes(supportAutoType.extractJson as never)) {
+      dealResult = extractJson(dealResult)
+    }
+  } catch (e) {
+  }
+
   if (!hasJson) {
     try {
       // const temp = jsonDecode()
-      const tempJson = escapeDecode(result);
+      const tempJson = escapeDecode(dealResult);
       if (tempJson && typeof tempJson == 'object') {
         result = jsonEncode(tempJson, contentConfig.tabSize)
         hasJson = true
@@ -150,8 +184,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
 
   if (!hasJson) {
     try {
-      // 为了支持微信的   字符
-      const tempJson = escapeDecode(jsonArchive(unicodeDecode(result)));
+      const tempJson = escapeDecode(unicodeDecode(dealResult));
       if (tempJson && typeof tempJson == 'object') {
         result = jsonEncode(tempJson, contentConfig.tabSize)
         hasJson = true
@@ -161,8 +194,11 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
     }
   }
 
-  if (!hasJson) {
-    result = unicodeDecode(result)
+  try {
+    if (!hasJson && order.includes(supportAutoType.unicode as never)) {
+      result = unicodeDecode(result)
+    }
+  } catch (e) {
   }
   return result;
 }
@@ -820,6 +856,31 @@ const handleConfigMenuClick = (clickInfo: any) => {
       }
       theme.value = nextTheme[theme.value]
       break;
+    case "autoTypeUnicode":
+      let unicodeIndex = contentConfig.autoFormat.indexOf(supportAutoType.unicode);
+      if (unicodeIndex > -1) {
+        contentConfig.autoFormat.splice(unicodeIndex, 1);
+      } else {
+        contentConfig.autoFormat.push(supportAutoType.unicode)
+      }
+      break;
+    case "autoTypeArchive":
+      const archiveIndex = contentConfig.autoFormat.indexOf(supportAutoType.archive);
+      if (archiveIndex > -1) {
+        contentConfig.autoFormat.splice(archiveIndex, 1);
+      } else {
+        contentConfig.autoFormat.push(supportAutoType.archive)
+
+      }
+      break;
+    case "autoTypeExtract":
+      let extractIndex = contentConfig.autoFormat.indexOf(supportAutoType.extractJson);
+      if (extractIndex > -1) {
+        contentConfig.autoFormat.splice(extractIndex, 1);
+      } else {
+        contentConfig.autoFormat.push(supportAutoType.extractJson)
+      }
+      break;
     case 'useDesc':
       const instructions = [
         "默认行为：粘贴自动格式化json，支持unicode字符(如：\\x22、\\u0031)的转码自动格式化 快捷键：ctrl + v",
@@ -1096,16 +1157,25 @@ function renameShowModel() {
           </a-button>
           <template #overlay>
             <a-menu @click="handleConfigMenuClick">
-              <a-menu-item style="width: 100px" key="useWrap">
+              <a-menu-item style="width: 130px" key="autoTypeExtract">
+                去除头尾非json {{ contentConfig.autoFormat.includes(supportAutoType.extractJson) ? '√' : '' }}
+              </a-menu-item>
+              <!--              <a-menu-item style="width: 130px" key="autoTypeArchive">-->
+              <!--                微信非断行空格 {{ contentConfig.autoFormat.includes(supportAutoType.archive) ? '√' : '' }}-->
+              <!--              </a-menu-item>-->
+              <a-menu-item style="width: 130px" key="autoTypeUnicode">
+                强制unicode {{ contentConfig.autoFormat.includes(supportAutoType.unicode) ? '√' : '' }}
+              </a-menu-item>
+              <a-menu-item style="width: 130px" key="useWrap">
                 切换换行
               </a-menu-item>
-              <a-menu-item style="width: 100px" key="switchTheme">
+              <a-menu-item style="width: 130px" key="switchTheme">
                 切换主题
               </a-menu-item>
-              <a-menu-item style="width: 100px" key="switchCode">
+              <a-menu-item style="width: 130px" key="switchCode">
                 切换渲染器
               </a-menu-item>
-              <a-menu-item style="width: 100px" key="useDesc">
+              <a-menu-item style="width: 130px" key="useDesc">
                 使用说明
               </a-menu-item>
             </a-menu>

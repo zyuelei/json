@@ -39,3 +39,13 @@ export function windowIsDark() {
     // @ts-ignore
     return window.isDark && window.isDark()
 }
+
+export function windowSetContent(key: string, value: any) {
+    // @ts-ignore
+    return window.setContent && window.setContent(key, value)
+}
+
+export function windowGetContent(key: string) {
+    // @ts-ignore
+    return window.getContent && window.getContent(key)
+}
