@@ -23,8 +23,8 @@ import {
   supportEditTemplateType,
   systemConfig
 } from "../interface";
-import {DownOutlined, LockOutlined, SettingOutlined, UnlockOutlined, EditOutlined} from '@ant-design/icons-vue';
-import {message, Modal, Input} from 'ant-design-vue';
+import {DownOutlined, EditOutlined, LockOutlined, SettingOutlined, UnlockOutlined} from '@ant-design/icons-vue';
+import {Input, message, Modal} from 'ant-design-vue';
 import {
   base64Decode,
   escapeDecode,
@@ -40,6 +40,7 @@ import {
   urlDecode
 } from "../tools/AllEncoder";
 import {windowCopy, windowGetClipboardContent, windowIsMac, windowPluginEnter} from "../tools/windowTool.ts";
+import {useDoubleShiftDetector} from "../tools/detector";
 
 const emit = defineEmits(['changeTheme'])
 const props = defineProps<{
@@ -418,7 +419,7 @@ function getContentCursorOrAll(type: ContentSelectType) {
   }
 }
 
-const base64Decode111 = () => {
+const onBase64Decode = () => {
   let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
   const parseText = selectInfo.matchText;
   if (!parseText) {
@@ -436,7 +437,7 @@ const base64Decode111 = () => {
   }
   contentRefSetFocus()
 }
-const getDecode = () => {
+const onGetDecode = () => {
   let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
   const parseText = selectInfo.matchText;
   if (!parseText) {
@@ -457,7 +458,7 @@ const getDecode = () => {
 }
 
 
-const urlDecode111 = () => {
+const onUrlDecode = () => {
   let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
   const parseText = selectInfo.matchText;
 
@@ -554,7 +555,7 @@ const getSubstringByRange = (str: string, range: rangeMy): string => {
   return selectedText;
 }
 
-const unserializeDecode = () => {
+const onUnserializeDecode = () => {
   let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
   const parseText = selectInfo.matchText;
   if (!parseText) {
@@ -575,7 +576,7 @@ const unserializeDecode = () => {
   }
 }
 
-const unicodeDecode111 = () => {
+const onUnicodeDecode = () => {
   let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
   const parseText = selectInfo.matchText;
   if (!parseText) {
@@ -609,7 +610,7 @@ const getNowTimestamp = () => {
 }
 
 
-const timestampDecode = () => {
+const onTimestampDecode = () => {
   if (!timestampTrans()) {
     if (!dateTimeTrans()) {
       const timestamp = getNowTimestamp();
@@ -874,22 +875,18 @@ const handleResize = () => {
   })
 };
 
-let lastAltKeyPressTime = 0;
-const altKeyDoublePressThreshold = 300; // 双击间隔阈值，例如300毫秒
-const handleKeyDown = (e: KeyboardEvent) => {
+const {handleDoubleShiftKeyDown} = useDoubleShiftDetector({
+  onDoubleShift: () => {
+    renameShowModel();
+  },
+  preventDefault: true,
+})
+
+const listenCodeShortcutKey = (e: KeyboardEvent) => {
   const key = e.key.toLowerCase()
   const isMac = windowIsMac()
   const listenKey = isMac ? e.metaKey || e.altKey : e.ctrlKey || e.altKey;
   if (!listenKey) {
-    if (e.shiftKey && !e.repeat) {
-      const currentTime = Date.now();
-      if (currentTime - lastAltKeyPressTime < altKeyDoublePressThreshold) {
-        // 如果两次Alt按键事件的间隔小于阈值，则认为是双击
-        renameShowModel()
-        // 可以在这里触发你想要的逻辑
-      }
-      lastAltKeyPressTime = currentTime; // 更新最后按键时间
-    }
     return;
   }
   switch (key) {
@@ -953,22 +950,22 @@ const handleKeyDown = (e: KeyboardEvent) => {
       format()
       break;
     case '1':
-      getDecode()
+      onGetDecode()
       break;
     case '2':
-      urlDecode111()
+      onUrlDecode()
       break;
     case '3':
-      base64Decode111()
+      onBase64Decode()
       break;
     case '4':
-      unserializeDecode()
+      onUnserializeDecode()
       break;
     case '5':
-      timestampDecode()
+      onTimestampDecode()
       break;
     case '6':
-      unicodeDecode111()
+      onUnicodeDecode()
       break;
     case '8':
       formDataCopy()
@@ -979,12 +976,15 @@ const handleKeyDown = (e: KeyboardEvent) => {
     case '0':
       pasteOnly()
       break;
-    case 'shift':
-      break;
     default:
       return;
   }
   e.preventDefault()
+}
+
+const handleKeyDown = (e: KeyboardEvent) => {
+  handleDoubleShiftKeyDown(e);
+  listenCodeShortcutKey(e);
 }
 
 const handleKeyUp = () => {
@@ -1044,7 +1044,7 @@ function renameShowModel() {
           inputRef.value?.focus();
         }, 10)
       })
-    }
+    },
   };
   destroy()
   renameModal = Modal.info({
@@ -1052,6 +1052,7 @@ function renameShowModel() {
     content: h(inputComponent),
     maskClosable: true,
     onOk: done,
+    onCancel: contentRefSetFocus
   });
 }
 </script>
@@ -1135,12 +1136,12 @@ function renameShowModel() {
           </a-button>
         </div>
         <div>
-          <a-button class="operateBtnSmall" @click="getDecode">{{ showAltAlert ? '1' : '' }} get</a-button>
-          <a-button class="operateBtnSmall" @click="urlDecode111">{{ showAltAlert ? '2' : '' }} url</a-button>
-          <a-button class="operateBtn" @click="base64Decode111">{{ showAltAlert ? '3' : '' }} base64</a-button>
-          <a-button class="operateBtn" @click="unserializeDecode">{{ showAltAlert ? '4' : '' }} serialize</a-button>
-          <a-button class="operateBtn" @click="timestampDecode">{{ showAltAlert ? '5' : '' }} timestamp</a-button>
-          <a-button class="operateBtn" @click="unicodeDecode111">{{ showAltAlert ? '6' : '' }} unicode</a-button>
+          <a-button class="operateBtnSmall" @click="onGetDecode">{{ showAltAlert ? '1' : '' }} get</a-button>
+          <a-button class="operateBtnSmall" @click="onUrlDecode">{{ showAltAlert ? '2' : '' }} url</a-button>
+          <a-button class="operateBtn" @click="onBase64Decode">{{ showAltAlert ? '3' : '' }} base64</a-button>
+          <a-button class="operateBtn" @click="onUnserializeDecode">{{ showAltAlert ? '4' : '' }} serialize</a-button>
+          <a-button class="operateBtn" @click="onTimestampDecode">{{ showAltAlert ? '5' : '' }} timestamp</a-button>
+          <a-button class="operateBtn" @click="onUnicodeDecode">{{ showAltAlert ? '6' : '' }} unicode</a-button>
           <a-button class="operateBtn" @click="formDataCopy">{{ showAltAlert ? '8' : '' }} 复制form</a-button>
           <a-button class="operateBtn" @click="archiveCopy">{{ showAltAlert ? '9' : '' }} 复制压缩</a-button>
           <a-button class="operateBtnSmall" @click="pasteOnly">{{ showAltAlert ? '0' : '' }} 仅粘贴</a-button>
