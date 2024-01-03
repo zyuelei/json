@@ -19,7 +19,8 @@ export interface systemConfig {
     printMargin?: boolean
     theme?: string
     render: supportEditTemplateType,
-    autoFormat: supportAutoType[]
+    autoFormat: supportAutoType[],
+    defaultNewTab: boolean,
 }
 
 export interface rangeMy {

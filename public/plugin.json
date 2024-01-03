@@ -21,19 +21,6 @@
       ]
     },
     {
-      "code": "json_format",
-      "explain": "json格式化",
-      "cmds": [
-        "json",
-        "JSON",
-        {
-          "type": "regex",
-          "label": "json",
-          "match": "/^\\s*(\\{[\\s\\S]*\\}|\\[[\\s\\S]*\\])\\s*$/"
-        }
-      ]
-    },
-    {
       "code": "get_url_to_json",
       "explain": "url参数转json",
       "cmds": [
@@ -52,6 +39,30 @@
           "type": "regex",
           "label": "serialize转json",
           "match": "/^a:\\d+:{(?:.*;}*)+}$/"
+        }
+      ]
+    },
+    {
+      "code": "json_format",
+      "explain": "json格式化",
+      "cmds": [
+        "json",
+        "JSON",
+        {
+          "type": "regex",
+          "label": "json",
+          "match": "/^\\s*(\\{[\\s\\S]*\\}|\\[[\\s\\S]*\\])\\s*$/"
+        }
+      ]
+    },
+    {
+      "code": "json_trim_format",
+      "explain": "json去除头尾格式化",
+      "cmds": [
+        {
+          "type": "regex",
+          "label": "json",
+          "match": "/.*(\\{[\\s\\S]*\\}|\\[[\\s\\S]*\\]).*/"
         }
       ]
     }

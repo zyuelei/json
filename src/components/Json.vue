@@ -67,6 +67,7 @@ const config: systemConfig = systemConfig ? systemConfig : {
   useWrap: false,
   autoFormat: [supportAutoType.extractJson, supportAutoType.archive],
   render: supportEditTemplateType.monaco, // brace  moncaco
+  defaultNewTab: false,
 };
 config.theme = theme.value
 const contentConfig = reactive<systemConfig>(config)
@@ -82,24 +83,35 @@ watch(contentConfig, () => {
 });
 
 windowPluginEnter(({payload, type, code}) => {
+  const switchTab = () => {
+    if (contentConfig.defaultNewTab) {
+      addTab();
+    } else {
+      activeKey.value = 0;
+    }
+  }
   switch (code) {
     case "json_format":
       if (type === 'regex') {
-        activeKey.value = 0
+        switchTab();
         setValue(payload);
       }
       break;
+    case "json_trim_format":
+      switchTab();
+      setValue(payload, {formatOrder: [supportAutoType.extractJson]});
+      break;
     case "get_url_to_json":
-      activeKey.value = 0
+      switchTab();
       setValue(payload, {formatOrder: [supportAutoType.get_param]});
       break;
     case "unserialize_format":
-      activeKey.value = 0
+      switchTab();
       setValue(payload, {formatOrder: [supportAutoType.unserialize]});
       break;
     case "unicode_decode":
     default:
-      activeKey.value = 0
+      switchTab();
       setValue(payload);
       break;
   }
@@ -864,6 +876,14 @@ const handleConfigMenuClick = (clickInfo: any) => {
         contentConfig.autoFormat.push(supportAutoType.unicode)
       }
       break;
+    case "autoTypeGet":
+      let getIndex = contentConfig.autoFormat.indexOf(supportAutoType.get_param);
+      if (getIndex > -1) {
+        contentConfig.autoFormat.splice(getIndex, 1);
+      } else {
+        contentConfig.autoFormat.push(supportAutoType.get_param)
+      }
+      break;
     case "autoTypeArchive":
       const archiveIndex = contentConfig.autoFormat.indexOf(supportAutoType.archive);
       if (archiveIndex > -1) {
@@ -872,6 +892,9 @@ const handleConfigMenuClick = (clickInfo: any) => {
         contentConfig.autoFormat.push(supportAutoType.archive)
 
       }
+      break;
+    case "defaultNewTab":
+      contentConfig.defaultNewTab = !contentConfig.defaultNewTab;
       break;
     case "autoTypeExtract":
       let extractIndex = contentConfig.autoFormat.indexOf(supportAutoType.extractJson);
@@ -1163,8 +1186,14 @@ function renameShowModel() {
               <!--              <a-menu-item style="width: 130px" key="autoTypeArchive">-->
               <!--                微信非断行空格 {{ contentConfig.autoFormat.includes(supportAutoType.archive) ? '√' : '' }}-->
               <!--              </a-menu-item>-->
+              <a-menu-item style="width: 130px" key="autoTypeGet">
+                自动get {{ contentConfig.autoFormat.includes(supportAutoType.get_param) ? '√' : '' }}
+              </a-menu-item>
               <a-menu-item style="width: 130px" key="autoTypeUnicode">
                 强制unicode {{ contentConfig.autoFormat.includes(supportAutoType.unicode) ? '√' : '' }}
+              </a-menu-item>
+              <a-menu-item style="width: 130px" key="defaultNewTab">
+                自动新建tab {{ contentConfig.defaultNewTab ? '√' : '' }}
               </a-menu-item>
               <a-menu-item style="width: 130px" key="useWrap">
                 切换换行
