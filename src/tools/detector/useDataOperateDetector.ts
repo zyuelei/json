@@ -30,10 +30,14 @@ export function useDataOperateDetector({
         return windowSetContent(saveListKey, list)
     }
 
-    function pushSaveDataList(key: number) {
+    function pushSaveDataList(data: number, index?: number) {
         let list = getSaveDataList();
-        if (!list.includes(key)) {
-            list.push(key)
+        if (!list.includes(data)) {
+            if (index === undefined) {
+                list.push(data)
+            } else {
+                list.splice(index, 0, data)
+            }
             setSaveDataList(list)
         }
     }
@@ -59,7 +63,7 @@ export function useDataOperateDetector({
     function loadData() {
         const list = getSaveDataList();
         let removeKey: number[] = [];
-        [...list].reverse().map((key) => {
+        list.map((key) => {
             const data = getSaveDataContent(key)
             const res = onLoadData(data)
             if (!res) {
@@ -71,13 +75,13 @@ export function useDataOperateDetector({
         }
     }
 
-    function saveData(data: panesInterface) {
+    function saveData(data: panesInterface, index?: number) {
         if (!toggleSwitch.value) {
             return true;
         }
         setTimeout(() => {
             const saveDataKey = saveDataKeyPrefix + data.key;
-            pushSaveDataList(data.key);
+            pushSaveDataList(data.key, index);
             windowSetContent(saveDataKey, data);
         })
     }

@@ -153,7 +153,7 @@ const activeData = computed(() => {
 })
 
 const saveActiveValue = (str: string) => {
-  saveData(toRaw(activeData.value))
+  saveData(toRaw(activeData.value), activeIndex.value)
   activeData.value.content = str
 }
 const favorite = () => {
@@ -934,7 +934,7 @@ const handleConfigMenuClick = (clickInfo: any) => {
       contentConfig.saveData = !contentConfig.saveData;
       toggleSwitch.value = config.saveData
       if (contentConfig.saveData) {
-        panes.value.map(item => saveData(toRaw(item)))
+        panes.value.map((value, index) => saveData(toRaw(value), index))
       }
       break;
     case "autoTypeExtract":
