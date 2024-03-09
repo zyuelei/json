@@ -49,7 +49,7 @@ import {
   windowPluginEnter,
   windowSetContent
 } from "../tools/windowTool.ts";
-import {useDoubleShiftDetector} from "../tools/detector";
+import {useDataOperateDetector, useDoubleShiftDetector} from "../tools/detector";
 
 const emit = defineEmits(['changeTheme'])
 const props = defineProps<{
@@ -60,6 +60,21 @@ const childElementRefs = ref();
 const tabsContainerRef = ref();
 const showAltAlert = ref(false)
 const systemConfig = windowGetContent('config');
+
+const {saveData, loadData, removeData, toggleSwitch} = useDataOperateDetector({
+  onLoadData: function (data: panesInterface) {
+    if (!data) {
+      return false;
+    }
+    if (panes.value.filter(value => value.key == data.key).length > 0) {
+      return true;
+    }
+    data.init = false;
+    panes.value.push(data)
+    return true;
+  }
+})
+
 const config: systemConfig = systemConfig ? systemConfig : {
   fontSize: 14,
   tabSize: 4,
@@ -68,7 +83,10 @@ const config: systemConfig = systemConfig ? systemConfig : {
   autoFormat: [supportAutoType.extractJson, supportAutoType.archive],
   render: supportEditTemplateType.monaco, // brace  moncaco
   defaultNewTab: false,
+  saveData: false,
 };
+
+toggleSwitch.value = config.saveData
 config.theme = theme.value
 const contentConfig = reactive<systemConfig>(config)
 watchEffect(() => {
@@ -81,6 +99,7 @@ watch(contentConfig, () => {
 }, {
   deep: true
 });
+
 
 windowPluginEnter(({payload, type, code}) => {
   const switchTab = () => {
@@ -115,12 +134,16 @@ windowPluginEnter(({payload, type, code}) => {
       setValue(payload);
       break;
   }
+
+  loadData()
   contentRefSetFocus(50)
 })
 
-const panes = ref<panesInterface[]>([
-  {title: 'default', key: 0, closable: false, favorite: true, content: '', time: 0, render: contentConfig.render},
-]);
+const defaultPanesValue: panesInterface[] = [
+  {title: 'temp', key: 0, closable: false, favorite: true, content: '', time: 0, render: contentConfig.render, init: true},
+];
+
+const panes = ref<panesInterface[]>(defaultPanesValue);
 const activeKey = ref(panes.value[0].key);
 const activeIndex = computed(() => {
   return panes.value.findIndex(obj => obj.key === activeKey.value)
@@ -130,6 +153,7 @@ const activeData = computed(() => {
 })
 
 const saveActiveValue = (str: string) => {
+  saveData(toRaw(activeData.value))
   activeData.value.content = str
 }
 const favorite = () => {
@@ -717,6 +741,7 @@ const addTab = () => {
     title: dayjs(nowTime).format('HH:mm:ss'),
     key: nowTime,
     content: '',
+    init: true,
     time: nowTime,
     render: contentConfig.render
   });
@@ -731,6 +756,7 @@ const removeTab = (targetKeyStr: string) => {
     }
   });
   panes.value = panes.value.filter(pane => pane.key !== targetKey);
+  removeData(targetKey)
   if (panes.value.length && activeKey.value === targetKey) {
     if (lastIndex >= 0) {
       activeKey.value = panes.value[lastIndex].key;
@@ -759,8 +785,16 @@ const onChange = ({content, format}: any) => {
 
 
 watch(activeKey, () => {
+  if (activeData.value.init == false) {
+    contentRefSetVal(activeData.value.content)
+    handleResize()
+    activeData.value.init = true
+  }
   contentRefSetFocus(50);
 })
+
+function initVal() {
+}
 
 
 const format = (text ?: string) => {
@@ -895,6 +929,13 @@ const handleConfigMenuClick = (clickInfo: any) => {
       break;
     case "defaultNewTab":
       contentConfig.defaultNewTab = !contentConfig.defaultNewTab;
+      break;
+    case "saveDataSwitch":
+      contentConfig.saveData = !contentConfig.saveData;
+      toggleSwitch.value = config.saveData
+      if (contentConfig.saveData) {
+        panes.value.map(item => saveData(toRaw(item)))
+      }
       break;
     case "autoTypeExtract":
       let extractIndex = contentConfig.autoFormat.indexOf(supportAutoType.extractJson);
@@ -1143,7 +1184,7 @@ function renameShowModel() {
 
 <template>
   <div :class="`container ` + theme">
-    <a-tabs class="tabs" v-model:activeKey="activeKey" type="editable-card" @edit="onEdit">
+    <a-tabs forceRender class="tabs" v-model:activeKey="activeKey" type="editable-card" @edit="onEdit">
       <template #rightExtra>
         <a-button style="height: 100%" :disabled="activeKey == 0" @click="favorite">
           <LockOutlined v-if="!activeData.favorite"/>
@@ -1195,6 +1236,9 @@ function renameShowModel() {
               <a-menu-item style="width: 130px" key="defaultNewTab">
                 自动新建tab {{ contentConfig.defaultNewTab ? '√' : '' }}
               </a-menu-item>
+              <a-menu-item style="width: 130px" key="saveDataSwitch">
+                保存数据 {{ contentConfig.saveData ? '√' : '' }}
+              </a-menu-item>
               <a-menu-item style="width: 130px" key="useWrap">
                 切换换行
               </a-menu-item>
@@ -1212,16 +1256,17 @@ function renameShowModel() {
         </a-dropdown>
 
       </template>
-      <a-tab-pane v-for="pane in panes" :key="pane.key" :tab="pane.title" :closable="pane.closable || !pane.favorite"
+      <a-tab-pane forceRender v-for="pane in panes" :key="pane.key" :tab="pane.title"
+                  :closable="pane.closable || !pane.favorite"
                   style="height: 100%;width: 100%;">
         <div ref="tabsContainerRef" style="height: 100%; width: 100%;">
           <BraceTemplate v-if="pane.render == supportEditTemplateType.brace"
                          ref="childElementRefs"
                          :config="contentConfig"
-                         @onChange="onChange" @format="format()"></BraceTemplate>
+                         @onChange="onChange" @format="format()" @onInit="initVal()"></BraceTemplate>
           <MonacoTemplate v-if="pane.render == supportEditTemplateType.monaco"
                           ref="childElementRefs" :config="contentConfig"
-                          @onChange="onChange" @format="format()"></MonacoTemplate>
+                          @onChange="onChange" @format="format()" @onInit="initVal()"></MonacoTemplate>
         </div>
       </a-tab-pane>
     </a-tabs>

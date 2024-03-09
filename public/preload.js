@@ -69,6 +69,14 @@ window.getContent = (key) => {
     })
 }
 
+window.removeContent = (key) => {
+    return toolsFun(() => {
+        utools.dbStorage.removeItem(key)
+    }, () => {
+        localStorage.removeItem(key);
+    })
+}
+
 function getOperatingSystem() {
     var os = "Unknown OS";
     if (navigator.appVersion.indexOf("Win") !== -1) os = "Windows";

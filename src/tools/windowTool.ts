@@ -49,3 +49,7 @@ export function windowGetContent(key: string) {
     // @ts-ignore
     return window.getContent && window.getContent(key)
 }
+export function windowRemoveContent(key: string) {
+    // @ts-ignore
+    return window.removeContent && window.removeContent(key)
+}

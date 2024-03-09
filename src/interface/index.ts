@@ -21,6 +21,7 @@ export interface systemConfig {
     render: supportEditTemplateType,
     autoFormat: supportAutoType[],
     defaultNewTab: boolean,
+    saveData: boolean,
 }
 
 export interface rangeMy {
@@ -60,6 +61,7 @@ export interface panesInterface {
     content: string,
     favorite?: boolean,
     time: number,
+    init: boolean,
     render: supportEditTemplateType,
 }
 

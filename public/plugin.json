@@ -7,7 +7,7 @@
     "preload": "D:\\companies\\tools\\decode_utf8\\dist\\preload.js"
   },
   "pluginSetting": {
-    "single": false
+    "single": true
   },
   "features": [
     {

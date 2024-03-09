@@ -33,7 +33,7 @@ let editor: any;
   }
 }
 
-const emit = defineEmits(['onChange', 'format'])
+const emit = defineEmits(['onInit', 'onChange', 'format'])
 const props = defineProps<{ config: systemConfig }>()
 const propsRle = reactive(props)
 const propsRef = toRefs<{ config: systemConfig }>(propsRle)
@@ -86,6 +86,8 @@ const init = () => {
         emit('format');
       }
   );
+
+  emit('onInit', {});
 }
 
 
