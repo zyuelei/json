@@ -83,6 +83,7 @@ const config: systemConfig = systemConfig ? systemConfig : {
   autoFormat: [supportAutoType.extractJson, supportAutoType.archive],
   render: supportEditTemplateType.monaco, // brace  moncaco
   defaultNewTab: false,
+  doubleShiftKeyDown: false,
   saveData: false,
 };
 
@@ -140,7 +141,16 @@ windowPluginEnter(({payload, type, code}) => {
 })
 
 const defaultPanesValue: panesInterface[] = [
-  {title: 'temp', key: 0, closable: false, favorite: true, content: '', time: 0, render: contentConfig.render, init: true},
+  {
+    title: 'temp',
+    key: 0,
+    closable: false,
+    favorite: true,
+    content: '',
+    time: 0,
+    render: contentConfig.render,
+    init: true
+  },
 ];
 
 const panes = ref<panesInterface[]>(defaultPanesValue);
@@ -937,6 +947,9 @@ const handleConfigMenuClick = (clickInfo: any) => {
         panes.value.map((value, index) => saveData(toRaw(value), index))
       }
       break;
+    case "doubleShiftKeyDown":
+      contentConfig.doubleShiftKeyDown = !contentConfig.doubleShiftKeyDown;
+      break;
     case "autoTypeExtract":
       let extractIndex = contentConfig.autoFormat.indexOf(supportAutoType.extractJson);
       if (extractIndex > -1) {
@@ -1108,7 +1121,9 @@ const listenCodeShortcutKey = (e: KeyboardEvent) => {
 }
 
 const handleKeyDown = (e: KeyboardEvent) => {
-  handleDoubleShiftKeyDown(e);
+  if (contentConfig.doubleShiftKeyDown) {
+    handleDoubleShiftKeyDown(e);
+  }
   listenCodeShortcutKey(e);
 }
 
@@ -1238,6 +1253,9 @@ function renameShowModel() {
               </a-menu-item>
               <a-menu-item style="width: 130px" key="saveDataSwitch">
                 保存数据 {{ contentConfig.saveData ? '√' : '' }}
+              </a-menu-item>
+              <a-menu-item style="width: 130px" key="doubleShiftKeyDown">
+                双击shift重命名 {{ contentConfig.doubleShiftKeyDown ? '√' : '' }}
               </a-menu-item>
               <a-menu-item style="width: 130px" key="useWrap">
                 切换换行

@@ -13,7 +13,8 @@
     {
       "code": "unicode_decode",
       "explain": "unicode转码",
-      "cmds": [{
+      "cmds": [
+        {
           "type": "regex",
           "label": "unicode转码",
           "match": "/\\\\u([\\dA-Fa-f]{4})|\\\\x([0-9A-Fa-f]{2})/g"
@@ -46,6 +47,7 @@
       "code": "json_format",
       "explain": "json格式化",
       "cmds": [
+        "_zhuanyijson",
         "json",
         "JSON",
         {

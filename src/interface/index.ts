@@ -21,6 +21,7 @@ export interface systemConfig {
     render: supportEditTemplateType,
     autoFormat: supportAutoType[],
     defaultNewTab: boolean,
+    doubleShiftKeyDown: boolean,
     saveData: boolean,
 }
 
