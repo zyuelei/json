@@ -218,7 +218,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
     try {
       // const temp = jsonDecode()
       const tempJson = escapeDecode(dealResult);
-      if (tempJson && typeof tempJson == 'object') {
+      if (tempJson && typeof tempJson == 'object' && JSON.stringify(tempJson) !== '[]' && JSON.stringify(tempJson) !== '{}') {
         result = jsonEncode(tempJson, contentConfig.tabSize)
         hasJson = true
         // console.info('f:temp')
@@ -231,7 +231,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   if (!hasJson) {
     try {
       const tempJson = escapeDecode(unicodeDecode(dealResult));
-      if (tempJson && typeof tempJson == 'object') {
+      if (tempJson && typeof tempJson == 'object' && JSON.stringify(tempJson) !== '[]' && JSON.stringify(tempJson) !== '{}') {
         result = jsonEncode(tempJson, contentConfig.tabSize)
         hasJson = true
       }
