@@ -168,6 +168,7 @@ const saveActiveValue = (str: string) => {
 }
 const favorite = () => {
   activeData.value.favorite = !activeData.value.favorite
+  saveData(toRaw(activeData.value), activeIndex.value)
 }
 const getFormatData = (str: string, formatParam?: formatParam) => {
   const order = formatParam?.formatOrder ?? contentConfig.autoFormat
