@@ -12,6 +12,10 @@ export enum supportAutoType {
     unicode,
 }
 
+export type nullable<T> = {
+    [K in keyof T]: T[K] | null;
+}
+
 export interface systemConfig {
     tabSize?: number
     fontSize?: number

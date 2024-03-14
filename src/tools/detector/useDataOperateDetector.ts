@@ -1,19 +1,20 @@
 import {windowGetContent, windowRemoveContent, windowSetContent} from "../windowTool.ts";
 import {panesInterface} from "../../interface";
-import {ref} from "vue";
+import {Ref} from "vue";
 
 
 interface useDataOperateInterface {
-    onLoadData: (data: panesInterface) => boolean
+    onLoadData: (data: panesInterface) => boolean,
+    toggleSwitchSave?: Ref<boolean>,
 }
 
 export function useDataOperateDetector({
-                                           onLoadData
+                                           onLoadData,
+                                           toggleSwitchSave,
                                        }: useDataOperateInterface) {
     let saveList: number[] = [];
     const saveListKey = 'data_list';
     const saveDataKeyPrefix = 'data_content_';
-    const toggleSwitch = ref<boolean>(false)
 
     function getSaveDataList(): number[] {
         if (saveList.length > 0) {
@@ -76,7 +77,7 @@ export function useDataOperateDetector({
     }
 
     function saveData(data: panesInterface, index?: number) {
-        if (!toggleSwitch.value) {
+        if (toggleSwitchSave === undefined || !toggleSwitchSave.value) {
             return true;
         }
         setTimeout(() => {
@@ -85,6 +86,5 @@ export function useDataOperateDetector({
             windowSetContent(saveDataKey, data);
         })
     }
-
-    return {saveData, loadData, removeData, toggleSwitch}
+    return {saveData, loadData, removeData}
 }

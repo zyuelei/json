@@ -1,5 +1,4 @@
 <script setup lang="ts">import {
-  computed,
   h,
   nextTick,
   onBeforeUnmount,
@@ -10,7 +9,6 @@
   watch,
   watchEffect
 } from 'vue';
-import dayjs from 'dayjs'
 import BraceTemplate from "./BraceTemplate.vue";
 import MonacoTemplate from "./MonacoTemplate.vue";
 import {
@@ -18,7 +16,6 @@ import {
   editContentMy,
   getNextEnumValue,
   matchRangeMy,
-  panesInterface,
   rangeMy,
   supportAutoType,
   supportEditTemplateType,
@@ -49,7 +46,7 @@ import {
   windowPluginEnter,
   windowSetContent
 } from "../tools/windowTool.ts";
-import {useDataOperateDetector, useDoubleShiftDetector} from "../tools/detector";
+import {useDoubleShiftDetector, useSetValueDetector} from "../tools/detector";
 
 const emit = defineEmits(['changeTheme'])
 const props = defineProps<{
@@ -61,19 +58,6 @@ const tabsContainerRef = ref();
 const showAltAlert = ref(false)
 const systemConfig = windowGetContent('config');
 
-const {saveData, loadData, removeData, toggleSwitch} = useDataOperateDetector({
-  onLoadData: function (data: panesInterface) {
-    if (!data) {
-      return false;
-    }
-    if (panes.value.filter(value => value.key == data.key).length > 0) {
-      return true;
-    }
-    data.init = false;
-    panes.value.push(data)
-    return true;
-  }
-})
 
 const config: systemConfig = systemConfig ? systemConfig : {
   fontSize: 14,
@@ -86,10 +70,15 @@ const config: systemConfig = systemConfig ? systemConfig : {
   doubleShiftKeyDown: false,
   saveData: false,
 };
-
-toggleSwitch.value = config.saveData
 config.theme = theme.value
 const contentConfig = reactive<systemConfig>(config)
+
+const activeKey = ref(0);
+const {panesData, activeIndex, toggleSaveData, loadData, addData, deleteData, tabOperate, calcNextKey, activeData, saveActiveValue, saveActiveFavorite, saveActiveTitle, saveActiveRender} = useSetValueDetector({
+  toggleSwitchSave: contentConfig.saveData,
+  activeKey,
+})
+
 watchEffect(() => {
   contentConfig.theme = theme.value
   emit('changeTheme', theme.value);
@@ -140,36 +129,6 @@ windowPluginEnter(({payload, type, code}) => {
   contentRefSetFocus(50)
 })
 
-const defaultPanesValue: panesInterface[] = [
-  {
-    title: 'temp',
-    key: 0,
-    closable: false,
-    favorite: true,
-    content: '',
-    time: 0,
-    render: contentConfig.render,
-    init: true
-  },
-];
-
-const panes = ref<panesInterface[]>(defaultPanesValue);
-const activeKey = ref(panes.value[0].key);
-const activeIndex = computed(() => {
-  return panes.value.findIndex(obj => obj.key === activeKey.value)
-})
-const activeData = computed(() => {
-  return panes.value[activeIndex.value]
-})
-
-const saveActiveValue = (str: string) => {
-  saveData(toRaw(activeData.value), activeIndex.value)
-  activeData.value.content = str
-}
-const favorite = () => {
-  activeData.value.favorite = !activeData.value.favorite
-  saveData(toRaw(activeData.value), activeIndex.value)
-}
 const getFormatData = (str: string, formatParam?: formatParam) => {
   const order = formatParam?.formatOrder ?? contentConfig.autoFormat
   const format = formatParam?.formatOpen ?? true;
@@ -748,34 +707,13 @@ const dateTimeTrans = () => {
 const addTab = () => {
   const nowTime = new Date().getTime();
   activeKey.value = nowTime;
-  panes.value.push({
-    title: dayjs(nowTime).format('HH:mm:ss'),
-    key: nowTime,
-    content: '',
-    init: true,
-    time: nowTime,
-    render: contentConfig.render
-  });
+  addData(nowTime)
 };
 
 const removeTab = (targetKeyStr: string) => {
   const targetKey = parseInt(targetKeyStr)
-  let lastIndex = 0;
-  panes.value.forEach((pane, i) => {
-    if (pane.key === targetKey) {
-      lastIndex = i - 1;
-    }
-  });
-  panes.value = panes.value.filter(pane => pane.key !== targetKey);
-  removeData(targetKey)
-  if (panes.value.length && activeKey.value === targetKey) {
-    if (lastIndex >= 0) {
-      activeKey.value = panes.value[lastIndex].key;
-    } else {
-      activeKey.value = panes.value[0].key;
-    }
-  }
-};
+  deleteData(targetKey)
+}
 
 const onEdit = (targetKey: string | MouseEvent, action: string) => {
   if (action === 'add') {
@@ -852,44 +790,25 @@ const pasteAndFormat = () => {
 }
 
 const handleTabMenuClick = (clickInfo: any) => {
-  switch (clickInfo.key) {
-    case 'closeLeft':
-      panes.value.map((value: any) => {
-        if (value.key < activeKey.value && value.favorite !== true && value.key > 0) {
-          removeTab(value.key)
-        }
-      })
-      break;
-    case 'closeRight':
-      panes.value.map((value: any) => {
-        if (value.key > activeKey.value && value.favorite !== true && value.key > 0) {
-          removeTab(value.key)
-        }
-      })
-      break;
-    case 'closeOther':
-      panes.value.map((value: any) => {
-        if (value.key != activeKey.value && value.favorite !== true && value.key > 0) {
-          removeTab(value.key)
-        }
-      })
-      break;
-    case 'closeAll':
-      panes.value.map((value: any) => {
-        if (value.key > 0 && value.favorite !== true) {
-          removeTab(value.key)
-        }
-      })
-      break;
-    case 'forceCloseAll':
-      panes.value.map((value: any) => {
-        if (value.key > 0) {
-          removeTab(value.key)
-        }
-      })
-      break;
+  if (clickInfo.key == 'forceCloseAll') {
+    Modal.confirm({
+      title: '强制关闭全部',
+      okText: '确认',
+      cancelText: '取消',
+      content: '强制关闭会关闭锁定状态的tab，请谨慎',
+      maskClosable: true,
+      onOk: () => {
+        tabOperate(clickInfo.key)
+        contentRefSetFocus(20)
+      },
+      onCancel() {
+        contentRefSetFocus(20)
+      }
+    })
+  } else {
+    tabOperate(clickInfo.key)
+    contentRefSetFocus(20)
   }
-  contentRefSetFocus(20)
 }
 
 const handleConfigMenuClick = (clickInfo: any) => {
@@ -903,8 +822,8 @@ const handleConfigMenuClick = (clickInfo: any) => {
         return
       }
       const newRender = getNextEnumValue(supportEditTemplateType, activeData.value.render)
-      activeData.value.render = newRender
       contentConfig.render = newRender
+      saveActiveRender(newRender)
       break;
     case "switchTheme":
       const nextTheme: any = {
@@ -943,10 +862,7 @@ const handleConfigMenuClick = (clickInfo: any) => {
       break;
     case "saveDataSwitch":
       contentConfig.saveData = !contentConfig.saveData;
-      toggleSwitch.value = config.saveData
-      if (contentConfig.saveData) {
-        panes.value.map((value, index) => saveData(toRaw(value), index))
-      }
+      toggleSaveData(config.saveData)
       break;
     case "doubleShiftKeyDown":
       contentConfig.doubleShiftKeyDown = !contentConfig.doubleShiftKeyDown;
@@ -1032,15 +948,7 @@ const listenCodeShortcutKey = (e: KeyboardEvent) => {
     case 'alt':
       break;
     case 'tab':
-      let nextKey;
-      if (e.shiftKey) {
-        nextKey = activeIndex.value - 1;
-        if (nextKey < 0) nextKey = panes.value.length - 1;
-      } else {
-        nextKey = activeIndex.value + 1;
-        if (nextKey >= panes.value.length) nextKey = 0;
-      }
-      activeKey.value = panes.value[nextKey].key;
+      activeKey.value = calcNextKey(e.shiftKey)
       break;
     case 'w':
     case 'q':
@@ -1083,7 +991,7 @@ const listenCodeShortcutKey = (e: KeyboardEvent) => {
         e.preventDefault()
         return
       }
-      favorite()
+      saveActiveFavorite()
       break;
     case 'enter':
       format()
@@ -1155,9 +1063,7 @@ function renameShowModel() {
     renameModal && renameModal.destroy();
   }
   const done = () => {
-    if (inputValue.value) {
-      activeData.value.title = inputValue.value
-    }
+    saveActiveTitle(inputValue.value)
     destroy();
     contentRefSetFocus();
   }
@@ -1202,7 +1108,7 @@ function renameShowModel() {
   <div :class="`container ` + theme">
     <a-tabs forceRender class="tabs" v-model:activeKey="activeKey" type="editable-card" @edit="onEdit">
       <template #rightExtra>
-        <a-button style="height: 100%" :disabled="activeKey == 0" @click="favorite">
+        <a-button style="height: 100%" :disabled="activeKey == 0" @click="saveActiveFavorite">
           <LockOutlined v-if="!activeData.favorite"/>
           <UnlockOutlined v-if="activeData.favorite"/>
         </a-button>
@@ -1275,7 +1181,7 @@ function renameShowModel() {
         </a-dropdown>
 
       </template>
-      <a-tab-pane forceRender v-for="pane in panes" :key="pane.key" :tab="pane.title"
+      <a-tab-pane forceRender v-for="pane in panesData" :key="pane.key" :tab="pane.title"
                   :closable="pane.closable || !pane.favorite"
                   style="height: 100%;width: 100%;">
         <div ref="tabsContainerRef" style="height: 100%; width: 100%;">

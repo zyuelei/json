@@ -26,6 +26,10 @@ window.onPluginEnter = (callback) => {
         utools.onPluginEnter((option) => {
             callback && callback(option)
         })
+    }, () => {
+        setTimeout(() => {
+            callback && callback({payload: '', type: 'string', code: 'json_format'})
+        });
     })
 }
 
