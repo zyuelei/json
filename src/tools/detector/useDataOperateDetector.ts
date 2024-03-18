@@ -1,4 +1,4 @@
-import {windowGetContent, windowRemoveContent, windowSetContent} from "../windowTool.ts";
+import {windowAllContent, windowGetContent, windowRemoveContent, windowSetContent} from "../windowTool.ts";
 import {panesInterface} from "../../interface";
 import {useSetConfigDetector} from "./useSetConfigDetector";
 
@@ -69,6 +69,14 @@ export function useDataOperateDetector({
             const res = onLoadData(data)
             if (!res) {
                 removeKey.push(key)
+            }
+        })
+        const allDocs = windowAllContent(saveDataKeyPrefix);
+        allDocs.map((value: any) => {
+            const id = Number(value._id.substring(saveDataKeyPrefix.length))
+            if (!list.includes(id)) {
+                removeKey.push(id)
+                console.info('delete', id, removeKey, list)
             }
         })
         if (removeKey) {

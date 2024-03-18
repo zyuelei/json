@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {h, nextTick, onBeforeUnmount, onMounted, ref, watch} from 'vue';
+import {h, nextTick, onBeforeUnmount, onMounted, ref} from 'vue';
 import BraceTemplate from "./BraceTemplate.vue";
 import MonacoTemplate from "./MonacoTemplate.vue";
 import {

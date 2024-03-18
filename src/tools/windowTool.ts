@@ -53,3 +53,7 @@ export function windowRemoveContent(key: string) {
     // @ts-ignore
     return window.removeContent && window.removeContent(key)
 }
+export function windowAllContent(prefix?: string) {
+    // @ts-ignore
+    return window.allContent && window.allContent(prefix)
+}

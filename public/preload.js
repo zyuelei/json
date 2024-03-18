@@ -81,6 +81,26 @@ window.removeContent = (key) => {
     })
 }
 
+window.allContent = (prefix) => {
+    return toolsFun(() => {
+        return utools.db.allDocs(prefix)
+    }, () => {
+        const matchingData = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (!prefix || key.startsWith(prefix)) {
+                const value = localStorage.getItem(key);
+                matchingData.push({
+                    _id: key,
+                    value: JSON.parse(value)
+                });
+            }
+        }
+
+        return matchingData;
+    })
+}
+
 function getOperatingSystem() {
     var os = "Unknown OS";
     if (navigator.appVersion.indexOf("Win") !== -1) os = "Windows";
