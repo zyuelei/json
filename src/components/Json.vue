@@ -1,25 +1,16 @@
-<script setup lang="ts">import {
-  h,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  reactive,
-  ref,
-  toRaw,
-  watch,
-  watchEffect
-} from 'vue';
+<script setup lang="ts">
+import {h, nextTick, onBeforeUnmount, onMounted, ref, watch} from 'vue';
 import BraceTemplate from "./BraceTemplate.vue";
 import MonacoTemplate from "./MonacoTemplate.vue";
 import {
+  configListenerInterface,
   ContentSelectType,
   editContentMy,
   getNextEnumValue,
   matchRangeMy,
   rangeMy,
   supportAutoType,
-  supportEditTemplateType,
-  systemConfig
+  supportEditTemplateType
 } from "../interface";
 import {DownOutlined, EditOutlined, LockOutlined, SettingOutlined, UnlockOutlined} from '@ant-design/icons-vue';
 import {Input, message, Modal} from 'ant-design-vue';
@@ -38,65 +29,36 @@ import {
   unicodeDecode,
   urlDecode
 } from "../tools/AllEncoder";
-import {
-  windowCopy,
-  windowGetClipboardContent,
-  windowGetContent,
-  windowIsMac,
-  windowPluginEnter,
-  windowSetContent
-} from "../tools/windowTool.ts";
-import {useDoubleShiftDetector, useSetValueDetector} from "../tools/detector";
+import {windowCopy, windowGetClipboardContent, windowIsMac, windowPluginEnter} from "../tools/windowTool.ts";
+import {useDoubleShiftDetector, useSetConfigDetector, useSetValueDetector} from "../tools/detector";
 
-const emit = defineEmits(['changeTheme'])
-const props = defineProps<{
-  theme: string
-}>()
-const theme = ref(props.theme)
 const childElementRefs = ref();
 const tabsContainerRef = ref();
 const showAltAlert = ref(false)
-const systemConfig = windowGetContent('config');
 
-
-const config: systemConfig = systemConfig ? systemConfig : {
-  fontSize: 14,
-  tabSize: 4,
-  printMargin: false,
-  useWrap: false,
-  autoFormat: [supportAutoType.extractJson, supportAutoType.archive],
-  render: supportEditTemplateType.monaco, // brace  moncaco
-  defaultNewTab: false,
-  doubleShiftKeyDown: false,
-  saveData: false,
+const onConfigChange: configListenerInterface = (key, value) => {
+  switch (key) {
+    case 'theme':
+      theme.value = value as string;
+      break;
+  }
 };
-config.theme = theme.value
-const contentConfig = reactive<systemConfig>(config)
+const {getConfig, setConfig, unConfigChange} = useSetConfigDetector({
+  onConfigChange
+})
+const theme = ref<string>(getConfig('theme'));
 
 const activeKey = ref(0);
-const {panesData, activeIndex, toggleSaveData, loadData, addData, deleteData, tabOperate, calcNextKey, activeData, saveActiveValue, saveActiveFavorite, saveActiveTitle, saveActiveRender} = useSetValueDetector({
-  toggleSwitchSave: contentConfig.saveData,
+const {panesData, activeIndex, activeData, setSaveValue, loadData, addData, deleteData, tabOperate, calcNextKey} = useSetValueDetector({
   activeKey,
 })
 
-watchEffect(() => {
-  contentConfig.theme = theme.value
-  emit('changeTheme', theme.value);
-})
-
-watch(contentConfig, () => {
-  windowSetContent('config', toRaw(contentConfig))
-}, {
-  deep: true
-});
-
-
 windowPluginEnter(({payload, type, code}) => {
   const switchTab = () => {
-    if (contentConfig.defaultNewTab) {
+    if (getConfig('defaultNewTab')) {
       addTab();
     } else {
-      activeKey.value = 0;
+      setActiveKey(0)
     }
   }
   switch (code) {
@@ -130,7 +92,7 @@ windowPluginEnter(({payload, type, code}) => {
 })
 
 const getFormatData = (str: string, formatParam?: formatParam) => {
-  const order = formatParam?.formatOrder ?? contentConfig.autoFormat
+  const order = formatParam?.formatOrder ?? getConfig('autoFormat')
   const format = formatParam?.formatOpen ?? true;
   if (!format) {
     return str
@@ -141,7 +103,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
     if (!hasJson && order.includes(supportAutoType.get_param as never)) {
       const paramJson = getParamDecode(str)
       if (typeof paramJson === 'object' && jsonEncode(paramJson) != '{}') {
-        result = jsonEncode(paramJson, contentConfig.tabSize)
+        result = jsonEncode(paramJson, getConfig('tabSize'))
         hasJson = true
       }
     }
@@ -153,7 +115,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   if (!hasJson && order.includes(supportAutoType.unserialize as never)) {
     const paramJson = serializeDecode(str)
     if (typeof paramJson === 'object' && jsonEncode(paramJson) != '{}') {
-      result = jsonEncode(paramJson, contentConfig.tabSize)
+      result = jsonEncode(paramJson, getConfig('tabSize'))
       hasJson = true
       // console.info('f:unserialize')
     }
@@ -179,7 +141,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
       // const temp = jsonDecode()
       const tempJson = escapeDecode(dealResult);
       if (tempJson && typeof tempJson == 'object' && JSON.stringify(tempJson) !== '[]' && JSON.stringify(tempJson) !== '{}') {
-        result = jsonEncode(tempJson, contentConfig.tabSize)
+        result = jsonEncode(tempJson, getConfig('tabSize'))
         hasJson = true
         // console.info('f:temp')
       }
@@ -192,7 +154,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
     try {
       const tempJson = escapeDecode(unicodeDecode(dealResult));
       if (tempJson && typeof tempJson == 'object' && JSON.stringify(tempJson) !== '[]' && JSON.stringify(tempJson) !== '{}') {
-        result = jsonEncode(tempJson, contentConfig.tabSize)
+        result = jsonEncode(tempJson, getConfig('tabSize'))
         hasJson = true
       }
     } catch (e) {
@@ -217,7 +179,7 @@ type formatParam = {
 const setValue = (str?: string, formatParam?: formatParam) => {
   str = str === undefined ? '' : str
   str = getFormatData(str, formatParam);
-  saveActiveValue(str)
+  setSaveValue('content', str)
   contentRefSetVal(str)
 }
 const getActiveEdit = (): any => {
@@ -396,7 +358,7 @@ const isJson = (value: any, format?: boolean) => {
   try {
     if (typeof value == 'object') {
       if (format) {
-        return jsonEncode(value, contentConfig.tabSize);
+        return jsonEncode(value, getConfig('tabSize'));
       } else {
         return jsonEncode(value)
       }
@@ -404,7 +366,7 @@ const isJson = (value: any, format?: boolean) => {
     const json = jsonDecode(value);
     if (typeof json == 'object') {
       if (format) {
-        return jsonEncode(json, contentConfig.tabSize)
+        return jsonEncode(json, getConfig('tabSize'))
       } else {
         return value
       }
@@ -706,8 +668,8 @@ const dateTimeTrans = () => {
 
 const addTab = () => {
   const nowTime = new Date().getTime();
-  activeKey.value = nowTime;
   addData(nowTime)
+  setActiveKey(nowTime)
 };
 
 const removeTab = (targetKeyStr: string) => {
@@ -728,19 +690,19 @@ const onChange = ({content, format}: any) => {
   if (format) {
     setValue(content)
   } else {
-    saveActiveValue(content)
+    setSaveValue('content', content)
   }
 }
 
-
-watch(activeKey, () => {
+const setActiveKey = (value: number) => {
+  activeKey.value = value;
   if (activeData.value.init == false) {
     contentRefSetVal(activeData.value.content)
     handleResize()
     activeData.value.init = true
   }
   contentRefSetFocus(50);
-})
+};
 
 function initVal() {
 }
@@ -812,9 +774,10 @@ const handleTabMenuClick = (clickInfo: any) => {
 }
 
 const handleConfigMenuClick = (clickInfo: any) => {
+  let configAutoFormat = getConfig('autoFormat');
   switch (clickInfo.key) {
     case "useWrap":
-      contentConfig.useWrap = !contentConfig.useWrap;
+      setConfig('useWrap', !getConfig('useWrap'))
       break;
     case "switchCode":
       if (activeData.value.content) {
@@ -822,58 +785,61 @@ const handleConfigMenuClick = (clickInfo: any) => {
         return
       }
       const newRender = getNextEnumValue(supportEditTemplateType, activeData.value.render)
-      contentConfig.render = newRender
-      saveActiveRender(newRender)
+      setConfig('render', newRender)
+      setSaveValue('render', newRender)
       break;
     case "switchTheme":
       const nextTheme: any = {
         dark: 'light',
         light: 'dark'
       }
-      theme.value = nextTheme[theme.value]
+      const nextThemeEl = nextTheme[getConfig('theme')];
+      setConfig('theme', nextThemeEl || 'light')
       break;
     case "autoTypeUnicode":
-      let unicodeIndex = contentConfig.autoFormat.indexOf(supportAutoType.unicode);
+      let unicodeIndex = configAutoFormat.indexOf(supportAutoType.unicode);
       if (unicodeIndex > -1) {
-        contentConfig.autoFormat.splice(unicodeIndex, 1);
+        configAutoFormat.splice(unicodeIndex, 1);
       } else {
-        contentConfig.autoFormat.push(supportAutoType.unicode)
+        configAutoFormat.push(supportAutoType.unicode)
       }
+      setConfig('autoFormat', configAutoFormat)
       break;
     case "autoTypeGet":
-      let getIndex = contentConfig.autoFormat.indexOf(supportAutoType.get_param);
+      let getIndex = configAutoFormat.indexOf(supportAutoType.get_param);
       if (getIndex > -1) {
-        contentConfig.autoFormat.splice(getIndex, 1);
+        configAutoFormat.splice(getIndex, 1);
       } else {
-        contentConfig.autoFormat.push(supportAutoType.get_param)
+        configAutoFormat.push(supportAutoType.get_param)
       }
+      setConfig('autoFormat', configAutoFormat)
       break;
     case "autoTypeArchive":
-      const archiveIndex = contentConfig.autoFormat.indexOf(supportAutoType.archive);
+      const archiveIndex = configAutoFormat.indexOf(supportAutoType.archive);
       if (archiveIndex > -1) {
-        contentConfig.autoFormat.splice(archiveIndex, 1);
+        configAutoFormat.splice(archiveIndex, 1);
       } else {
-        contentConfig.autoFormat.push(supportAutoType.archive)
-
+        configAutoFormat.push(supportAutoType.archive)
       }
+      setConfig('autoFormat', configAutoFormat)
       break;
     case "defaultNewTab":
-      contentConfig.defaultNewTab = !contentConfig.defaultNewTab;
+      setConfig('defaultNewTab', !getConfig('defaultNewTab'))
       break;
     case "saveDataSwitch":
-      contentConfig.saveData = !contentConfig.saveData;
-      toggleSaveData(config.saveData)
+      setConfig('saveData', !getConfig('saveData'));
       break;
     case "doubleShiftKeyDown":
-      contentConfig.doubleShiftKeyDown = !contentConfig.doubleShiftKeyDown;
+      setConfig('doubleShiftKeyDown', !getConfig('doubleShiftKeyDown'))
       break;
     case "autoTypeExtract":
-      let extractIndex = contentConfig.autoFormat.indexOf(supportAutoType.extractJson);
+      let extractIndex = configAutoFormat.indexOf(supportAutoType.extractJson);
       if (extractIndex > -1) {
-        contentConfig.autoFormat.splice(extractIndex, 1);
+        configAutoFormat.splice(extractIndex, 1);
       } else {
-        contentConfig.autoFormat.push(supportAutoType.extractJson)
+        configAutoFormat.push(supportAutoType.extractJson)
       }
+      setConfig('autoFormat', configAutoFormat)
       break;
     case 'useDesc':
       const instructions = [
@@ -948,7 +914,7 @@ const listenCodeShortcutKey = (e: KeyboardEvent) => {
     case 'alt':
       break;
     case 'tab':
-      activeKey.value = calcNextKey(e.shiftKey)
+      setActiveKey(calcNextKey(e.shiftKey))
       break;
     case 'w':
     case 'q':
@@ -991,7 +957,7 @@ const listenCodeShortcutKey = (e: KeyboardEvent) => {
         e.preventDefault()
         return
       }
-      saveActiveFavorite()
+      setSaveValue('favorite', !activeData.value.favorite)
       break;
     case 'enter':
       format()
@@ -1030,7 +996,7 @@ const listenCodeShortcutKey = (e: KeyboardEvent) => {
 }
 
 const handleKeyDown = (e: KeyboardEvent) => {
-  if (contentConfig.doubleShiftKeyDown) {
+  if (getConfig('doubleShiftKeyDown')) {
     handleDoubleShiftKeyDown(e);
   }
   listenCodeShortcutKey(e);
@@ -1043,6 +1009,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
   window.removeEventListener('keydown', handleKeyDown)
   window.removeEventListener('keyup', handleKeyUp)
+  unConfigChange(onConfigChange)
 });
 
 onMounted(() => {
@@ -1063,7 +1030,7 @@ function renameShowModel() {
     renameModal && renameModal.destroy();
   }
   const done = () => {
-    saveActiveTitle(inputValue.value)
+    inputValue.value && setSaveValue('title', inputValue.value)
     destroy();
     contentRefSetFocus();
   }
@@ -1106,9 +1073,11 @@ function renameShowModel() {
 
 <template>
   <div :class="`container ` + theme">
-    <a-tabs forceRender class="tabs" v-model:activeKey="activeKey" type="editable-card" @edit="onEdit">
+    <a-tabs forceRender class="tabs" v-model:activeKey="activeKey" @change="setActiveKey" type="editable-card"
+            @edit="onEdit">
       <template #rightExtra>
-        <a-button style="height: 100%" :disabled="activeKey == 0" @click="saveActiveFavorite">
+        <a-button style="height: 100%" :disabled="activeKey == 0"
+                  @click="setSaveValue('favorite', !activeData.favorite)">
           <LockOutlined v-if="!activeData.favorite"/>
           <UnlockOutlined v-if="activeData.favorite"/>
         </a-button>
@@ -1144,31 +1113,31 @@ function renameShowModel() {
           <template #overlay>
             <a-menu @click="handleConfigMenuClick">
               <a-menu-item style="width: 130px" key="autoTypeExtract">
-                去除头尾非json {{ contentConfig.autoFormat.includes(supportAutoType.extractJson) ? '√' : '' }}
+                去除头尾非json {{ getConfig('autoFormat').includes(supportAutoType.extractJson) ? '√' : '' }}
               </a-menu-item>
               <!--              <a-menu-item style="width: 130px" key="autoTypeArchive">-->
               <!--                微信非断行空格 {{ contentConfig.autoFormat.includes(supportAutoType.archive) ? '√' : '' }}-->
               <!--              </a-menu-item>-->
               <a-menu-item style="width: 130px" key="autoTypeGet">
-                自动get {{ contentConfig.autoFormat.includes(supportAutoType.get_param) ? '√' : '' }}
+                自动get {{ getConfig('autoFormat').includes(supportAutoType.get_param) ? '√' : '' }}
               </a-menu-item>
               <a-menu-item style="width: 130px" key="autoTypeUnicode">
-                强制unicode {{ contentConfig.autoFormat.includes(supportAutoType.unicode) ? '√' : '' }}
+                强制unicode {{ getConfig('autoFormat').includes(supportAutoType.unicode) ? '√' : '' }}
               </a-menu-item>
               <a-menu-item style="width: 130px" key="defaultNewTab">
-                自动新建tab {{ contentConfig.defaultNewTab ? '√' : '' }}
+                自动新建tab {{ getConfig('defaultNewTab') ? '√' : '' }}
               </a-menu-item>
               <a-menu-item style="width: 130px" key="saveDataSwitch">
-                保存数据 {{ contentConfig.saveData ? '√' : '' }}
+                保存数据 {{ getConfig('saveData') ? '√' : '' }}
               </a-menu-item>
               <a-menu-item style="width: 130px" key="doubleShiftKeyDown">
-                双击shift重命名 {{ contentConfig.doubleShiftKeyDown ? '√' : '' }}
+                双击shift重命名 {{ getConfig('doubleShiftKeyDown') ? '√' : '' }}
               </a-menu-item>
               <a-menu-item style="width: 130px" key="useWrap">
-                切换换行
+                切换为:{{ getConfig('useWrap') ? '不折行' : '折行' }}
               </a-menu-item>
               <a-menu-item style="width: 130px" key="switchTheme">
-                切换主题
+                切换主题为:{{ getConfig('theme') == 'light' ? '黑暗' : '明亮' }}
               </a-menu-item>
               <a-menu-item style="width: 130px" key="switchCode">
                 切换渲染器
@@ -1187,10 +1156,9 @@ function renameShowModel() {
         <div ref="tabsContainerRef" style="height: 100%; width: 100%;">
           <BraceTemplate v-if="pane.render == supportEditTemplateType.brace"
                          ref="childElementRefs"
-                         :config="contentConfig"
                          @onChange="onChange" @format="format()" @onInit="initVal()"></BraceTemplate>
           <MonacoTemplate v-if="pane.render == supportEditTemplateType.monaco"
-                          ref="childElementRefs" :config="contentConfig"
+                          ref="childElementRefs"
                           @onChange="onChange" @format="format()" @onInit="initVal()"></MonacoTemplate>
         </div>
       </a-tab-pane>

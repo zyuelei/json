@@ -1,25 +1,24 @@
 import {computed, Ref, ref, toRaw} from "vue";
-import {nullable, panesInterface, supportEditTemplateType} from "../../interface";
-import {useDataOperateDetector} from "./useDataOperateDetector.ts";
+import {panesInterface} from "../../interface";
+import {useDataOperateDetector} from "./useDataOperateDetector";
 import dayjs from "dayjs";
-
-export interface nullableDefaultPanesValue extends nullable<panesInterface> {
-}
+import {useSetConfigDetector} from "./useSetConfigDetector";
 
 interface UseDoubleShiftDetectorParams {
     activeKey: Ref<number>,
-    toggleSwitchSave?: boolean,
-    defaultRender?: supportEditTemplateType,
 }
 
 export function useSetValueDetector({
                                         activeKey,
-                                        toggleSwitchSave,
-                                        defaultRender
                                     }: UseDoubleShiftDetectorParams) {
 
-    const toggleSwitchRef = ref<boolean>(!!toggleSwitchSave)
-    const render = defaultRender ?? supportEditTemplateType.monaco
+    const {getConfig} = useSetConfigDetector({
+        onConfigChange: (key, value) => {
+            if (key == 'saveData' && value) {
+                panes.value.map((value, index) => saveData(toRaw(value), index))
+            }
+        }
+    })
     const _defaultPanesValue: panesInterface = {
         title: 'temp',
         key: 0,
@@ -27,12 +26,11 @@ export function useSetValueDetector({
         favorite: true,
         content: '',
         time: 0,
-        render: render,
+        render: getConfig('render'),
         init: true
     };
 
     const {saveData, loadData, removeData} = useDataOperateDetector({
-        toggleSwitchSave: toggleSwitchRef,
         onLoadData: function (data: panesInterface) {
             if (!data) {
                 return false;
@@ -83,7 +81,7 @@ export function useSetValueDetector({
             content: '',
             init: true,
             time: nowTime,
-            render: render
+            render: getConfig('render')
         });
     }
 
@@ -127,29 +125,8 @@ export function useSetValueDetector({
         }
     }
 
-    const toggleSaveData = (val: boolean) => {
-        toggleSwitchRef.value = val
-        if (val) {
-            panes.value.map((value, index) => saveData(toRaw(value), index))
-        }
-    }
-    const saveActiveValue = (str: string) => {
-        saveData(toRaw(activeData.value), activeIndex.value)
-        activeData.value.content = str
-    }
-    const saveActiveFavorite = () => {
-        activeData.value.favorite = !activeData.value.favorite
-        saveData(toRaw(activeData.value), activeIndex.value)
-    }
-    const saveActiveTitle = (val: string) => {
-        if (!val) {
-            return;
-        }
-        activeData.value.title = val
-        saveData(toRaw(activeData.value), activeIndex.value)
-    }
-    const saveActiveRender = (val: supportEditTemplateType) => {
-        activeData.value.render = val
+    const setSaveValue = <T extends keyof panesInterface>(key: T, value: panesInterface[T]) => {
+        activeData.value[key] = value
         saveData(toRaw(activeData.value), activeIndex.value)
     }
 
@@ -165,5 +142,5 @@ export function useSetValueDetector({
         return panes.value[nextKey].key;
     }
 
-    return {panesData: panes, toggleSaveData, loadData, addData, deleteData, tabOperate, calcNextKey, activeIndex, activeData, saveActiveValue, saveActiveFavorite, saveActiveTitle, saveActiveRender};
+    return {panesData: panes, activeIndex, activeData, loadData, addData, deleteData, tabOperate, calcNextKey, setSaveValue};
 }

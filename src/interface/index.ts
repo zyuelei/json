@@ -16,12 +16,12 @@ export type nullable<T> = {
     [K in keyof T]: T[K] | null;
 }
 
-export interface systemConfig {
-    tabSize?: number
-    fontSize?: number
-    useWrap?: boolean
-    printMargin?: boolean
-    theme?: string
+export interface systemConfigInterface {
+    tabSize: number
+    fontSize: number
+    useWrap: boolean
+    printMargin: boolean
+    theme: string
     render: supportEditTemplateType,
     autoFormat: supportAutoType[],
     defaultNewTab: boolean,
@@ -29,6 +29,9 @@ export interface systemConfig {
     saveData: boolean,
 }
 
+export interface configListenerInterface {
+    <T extends keyof systemConfigInterface>(key: T, value: systemConfigInterface[T]): void
+}
 export interface rangeMy {
     startLine: number,
     endLine: number,

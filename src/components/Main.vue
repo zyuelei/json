@@ -1,25 +1,35 @@
 <script setup lang="ts">
 import Json from "./Json.vue";
-import {ref} from "vue";
+import {onBeforeUnmount, ref} from "vue";
 import {theme} from 'ant-design-vue';
 import {windowIsDark, windowPluginReady} from "../tools/windowTool.ts";
+import {useSetConfigDetector} from "../tools/detector";
+import {configListenerInterface} from "../interface";
 
 const themeVal = ref('light');
 const showSon = ref(false)
 
-const toggleTheme = (themeNew: any) => {
-  // theme.value === 'light' ? 'dark' : 'light'
-  themeVal.value = themeNew;
+const onConfigChange: configListenerInterface = (key, value) => {
+  if (key == 'theme') {
+    themeVal.value = value as string;
+  }
 };
+const {setConfig, unConfigChange} = useSetConfigDetector({
+  onConfigChange: onConfigChange
+})
 
 if (windowIsDark()) {
-  toggleTheme('dark')
+  setConfig('theme', 'dark')
 } else {
-  toggleTheme('light')
+  setConfig('theme', 'light')
 }
 
 windowPluginReady(() => {
   showSon.value = true
+});
+
+onBeforeUnmount(() => {
+  unConfigChange(onConfigChange)
 });
 
 </script>
@@ -29,7 +39,7 @@ windowPluginReady(() => {
     <a-config-provider :theme="{
         algorithm: themeVal == 'light' ? theme.compactAlgorithm : [ theme.compactAlgorithm, theme.darkAlgorithm],
       }">
-      <Json :theme="themeVal" @changeTheme="toggleTheme" v-if="showSon"></Json>
+      <Json v-if="showSon"></Json>
     </a-config-provider>
   </div>
 </template>

@@ -1,29 +1,33 @@
 <script setup lang="ts">
-import {onBeforeUnmount, onMounted, reactive, ref, toRefs, watchEffect} from 'vue'
+import {onBeforeUnmount, onMounted, ref} from 'vue'
 
 import * as ace from 'brace';
 import 'brace/ext/searchbox';
 import 'brace/ext/language_tools';
 import 'brace/mode/json';
 import 'brace/theme/monokai';
-import {editContentMy, rangeMy, systemConfig} from "../interface";
+import {editContentMy, rangeMy} from "../interface";
+import {useSetConfigDetector} from "../tools/detector";
 
 const editorDiv = ref();
 const editor = ref();
 
-
-const props = defineProps<{ config: systemConfig }>()
-const propsRle = reactive(props)
-const propsRef = toRefs<{ config: systemConfig }>(propsRle)
-watchEffect(() => {
-  if (editor.value) {
-    typeof propsRef.config.value.fontSize == 'number' && editor.value.setFontSize(propsRef.config.value.fontSize + 'px') // 设置文字大小
-    typeof propsRef.config.value.useWrap == 'boolean' && editor.value.getSession().setUseWrapMode(propsRef.config.value.useWrap) // 是否换行
-    typeof propsRef.config.value.tabSize == 'number' && editor.value.getSession().setTabSize(propsRef.config.value.tabSize) // 制表符长度
-    typeof propsRef.config.value.printMargin == 'boolean' && editor.value.setShowPrintMargin(propsRef.config.value.printMargin) // 打印边距可见
-    propsRef.config.value.theme == 'dark' ? editor.value.setTheme('ace/theme/monokai') : editor.value.setTheme('ace/theme/textmate') // 设置主题
+const afterInit = () => {
+  if (!editor.value) {
+    return
   }
+
+  typeof getConfig('fontSize') == 'number' && editor.value.setFontSize(getConfig('fontSize') + 'px') // 设置文字大小
+  typeof getConfig('useWrap') == 'boolean' && editor.value.getSession().setUseWrapMode(getConfig('useWrap')) // 是否换行
+  typeof getConfig('tabSize') == 'number' && editor.value.getSession().setTabSize(getConfig('tabSize')) // 制表符长度
+  typeof getConfig('printMargin') == 'boolean' && editor.value.setShowPrintMargin(getConfig('printMargin')) // 打印边距可见
+  getConfig('theme') == 'dark' ? editor.value.setTheme('ace/theme/monokai') : editor.value.setTheme('ace/theme/textmate') // 设置主题
+}
+
+const {getConfig, unConfigChange} = useSetConfigDetector({
+  onConfigChange: afterInit
 })
+
 const emit = defineEmits(['onInit', 'onChange', 'format'])
 
 const showEdit = (editorDiv: any) => {
@@ -211,12 +215,14 @@ const resize = () => {
 }
 onMounted(() => {
   showEdit(editorDiv.value)
+  afterInit()
   emit('onInit', {});
 });
 onBeforeUnmount(() => {
   editor.value?.destroy();
   editorDiv.value = null;
   editor.value = null
+  unConfigChange(afterInit)
 });
 defineExpose({setVal, focus, insert, replace, toRange, getContentInfo, resize})
 </script>

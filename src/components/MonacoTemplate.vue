@@ -5,12 +5,13 @@ import * as monaco from 'monaco-editor'
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 // @ts-ignore
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
-import {onBeforeUnmount, onMounted, reactive, ref, toRefs, watchEffect} from "vue";
-import {editContentMy, rangeMy, systemConfig} from "../interface";
+import {onBeforeUnmount, onMounted, ref} from "vue";
+import {editContentMy, rangeMy} from "../interface";
+import {useSetConfigDetector} from "../tools/detector";
 import IDimension = monaco.editor.IDimension;
 
 const editorDiv = ref();
-const editorInit = ref()
+const editorInit = ref(false)
 let editor: any;
 
 
@@ -34,19 +35,21 @@ let editor: any;
 }
 
 const emit = defineEmits(['onInit', 'onChange', 'format'])
-const props = defineProps<{ config: systemConfig }>()
-const propsRle = reactive(props)
-const propsRef = toRefs<{ config: systemConfig }>(propsRle)
-watchEffect(() => {
-  if (editorInit.value) {
-    let newConfig: any = {}
-    typeof propsRef.config.value.fontSize == 'number' ? newConfig.fontSize = propsRef.config.value.fontSize : '' // 设置文字大小
-    typeof propsRef.config.value.useWrap == 'boolean' ? (newConfig.wordWrap = propsRef.config.value.useWrap ? 'on' : 'off') : '' // 是否换行
-    typeof propsRef.config.value.tabSize == 'number' ? (newConfig.tabSize = propsRef.config.value.tabSize) : '' // 制表符长度
-    // typeof propsRef.config.value.printMargin == 'boolean' && editor.setShowPrintMargin(propsRef.config.value.printMargin) // 打印边距可见
-    propsRef.config.value.theme == 'dark' ? monaco.editor.setTheme('vs-dark') : monaco.editor.setTheme('vs') // 设置主题
-    editor.updateOptions(newConfig);
+
+const afterInit = () => {
+  if (!editorInit.value) {
+    return
   }
+  let newConfig: any = {}
+  typeof getConfig('fontSize') == 'number' ? newConfig.fontSize = getConfig('fontSize') : '' // 设置文字大小
+  typeof getConfig('useWrap') == 'boolean' ? (newConfig.wordWrap = getConfig('useWrap') ? 'on' : 'off') : '' // 是否换行
+  typeof getConfig('tabSize') == 'number' ? (newConfig.tabSize = getConfig('tabSize')) : '' // 制表符长度
+  // typeof getConfig'rintMargin. == 'boolean' && editor.setShowPrintMargin(getConfig'rintMargin.) // 打印边距可见
+  getConfig('theme') == 'dark' ? monaco.editor.setTheme('vs-dark') : monaco.editor.setTheme('vs') // 设置主题
+  editor.updateOptions(newConfig);
+}
+const {getConfig, unConfigChange} = useSetConfigDetector({
+  onConfigChange: afterInit
 })
 
 const resize = (dimension: IDimension) => {
@@ -189,6 +192,7 @@ const insert = (text: string) => {
 onMounted(() => {
   init()
   editorInit.value = true
+  afterInit();
 })
 
 onBeforeUnmount(() => {
@@ -196,6 +200,7 @@ onBeforeUnmount(() => {
   editor?.dispose();
   editorDiv.value = null;
   editor = null
+  unConfigChange(afterInit)
 });
 defineExpose({setVal, focus, copy, insert, replace, toRange, getContentInfo, resize})
 </script>
