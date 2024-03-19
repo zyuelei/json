@@ -3,6 +3,7 @@ import {h, nextTick, onBeforeUnmount, onMounted, ref} from 'vue';
 import BraceTemplate from "./BraceTemplate.vue";
 import MonacoTemplate from "./MonacoTemplate.vue";
 import Setting from "./Setting.vue";
+import Archive from "./Archive.vue";
 
 import {
   configListenerInterface,
@@ -51,7 +52,17 @@ const {getConfig, unConfigChange} = useSetConfigDetector({
 const theme = ref<string>(getConfig('theme'));
 
 const activeKey = ref(0);
-const {panesData, activeIndex, activeData, setSaveValue, loadData, addData, deleteData, tabOperate, calcNextKey} = useSetValueDetector({
+const {
+  panesData,
+  activeIndex,
+  activeData,
+  setSaveValue,
+  loadData,
+  addData,
+  deleteData,
+  tabOperate,
+  calcNextKey
+} = useSetValueDetector({
   activeKey,
 })
 
@@ -1040,14 +1051,24 @@ function renameShowModel() {
       </div>
 
     </a-space>
-    <a-drawer
-        v-model:open="settingShow"
-        @close="contentRefSetFocus"
-        title="编辑器设置"
-        placement="right"
-    >
-      <Setting></Setting>
-    </a-drawer>
+    <div>
+      <a-drawer
+          v-model:open="settingShow"
+          @close="contentRefSetFocus"
+          title="编辑器设置"
+          :body-style="{paddingTop: '2px'}"
+          placement="right"
+      >
+        <a-tabs centered>
+          <a-tab-pane style="margin-top:8px;" key="1" tab="归档管理">
+            <Archive></Archive>
+          </a-tab-pane>
+          <a-tab-pane style="margin-top:8px;" key="2" tab="基础设置">
+            <Setting></Setting>
+          </a-tab-pane>
+        </a-tabs>
+      </a-drawer>
+    </div>
   </div>
 </template>
 

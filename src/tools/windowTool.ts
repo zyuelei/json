@@ -49,11 +49,43 @@ export function windowGetContent(key: string) {
     // @ts-ignore
     return window.getContent && window.getContent(key)
 }
+
 export function windowRemoveContent(key: string) {
     // @ts-ignore
     return window.removeContent && window.removeContent(key)
 }
+
 export function windowAllContent(prefix?: string) {
     // @ts-ignore
     return window.allContent && window.allContent(prefix)
+}
+
+export function windowReadFile(path: string, callback: (value: string, status: boolean) => void) {
+    // @ts-ignore
+    return window.readFile && window.readFile(path, callback)
+}
+
+export function windowReadDirList(path: string, callback: (value: string[], status: boolean) => void) {
+    // @ts-ignore
+    return window.readDirList && window.readDirList(path, callback)
+}
+
+export function windowMkdir(path: string, callback: (status: boolean) => void) {
+    // @ts-ignore
+    return window.mkdir && window.mkdir(path, callback)
+}
+
+export function windowAddFile(path: string, content: string, callback?: (status: boolean) => void, isAppend ?: boolean) {
+    // @ts-ignore
+    return window.addFile && window.addFile(path, content, callback, isAppend)
+}
+
+export function windowGetNativeId(): string {
+    // @ts-ignore
+    return window.getNativeId && window.getNativeId()
+}
+
+export function windowGetPath(name: 'home' | 'appData' | 'userData' | 'temp' | 'exe' | 'desktop' | 'documents' | 'downloads' | 'music' | 'pictures' | 'videos' | 'logs'): string {
+    // @ts-ignore
+    return window.getPath && window.getPath(name)
 }

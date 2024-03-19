@@ -1,3 +1,8 @@
+let fs;
+toolsFun(() => {
+    fs = require('fs')
+})
+
 window.copyContent = (text) => {
     toolsFun(() => {
         utools.copyText(text)
@@ -41,7 +46,7 @@ window.isDark = () => {
     })
 }
 
-const toolsFun = (callback, errCallback) => {
+function toolsFun(callback, errCallback) {
     if (typeof utools != 'undefined') {
         return callback();
     } else {
@@ -113,4 +118,84 @@ function getOperatingSystem() {
     if (navigator.appVersion.indexOf("X11") !== -1) os = "UNIX";
     if (navigator.appVersion.indexOf("Linux") !== -1) os = "Linux";
     return os;
+}
+
+window.readFile = function (path, callback) {
+    return toolsFun(() => {
+        fs.readFile(path, 'utf8', (err, data) => {
+            if (err) {
+                callback && callback('', false);
+                return
+            }
+            callback && callback(data, true); // 打印文件列表
+        });
+    }, () => {
+        callback && callback([], false);
+    })
+}
+window.readDirList = function (path, callback) {
+    return toolsFun(() => {
+        fs.readdir(path, (err, files) => {
+            if (err) {
+                callback && callback([], false);
+                return
+            }
+            callback && callback(files, true); // 打印文件列表
+        });
+    }, () => {
+        callback && callback([], false);
+    })
+}
+window.mkdir = function (path, callback) {
+    return toolsFun(() => {
+        fs.mkdir(path, {recursive: true}, (err) => {
+            if (err) {
+                callback && callback(false);
+                return
+            }
+            callback && callback(true)
+        });
+    }, () => {
+        callback && callback(false);
+    })
+}
+window.addFile = function (path, content, callback, isAppend) {
+    return toolsFun(() => {
+        if (isAppend) {
+            fs.appendFile(path, content, (err) => {
+                if (err) {
+                    callback && callback(false);
+                    return
+                }
+                callback && callback(true)
+            });
+        } else {
+            fs.writeFile(path, content, (err) => {
+                if (err) {
+                    callback && callback(false);
+                    return
+                }
+                callback && callback(true)
+            });
+        }
+    }, () => {
+        callback && callback(false);
+    })
+}
+
+window.getNativeId = function () {
+    return toolsFun(() => {
+        return utools.getNativeId()
+    }, () => {
+        return '';
+    })
+}
+
+
+window.getPath = function (name) {
+    return toolsFun(() => {
+        return utools.getPath(name)
+    }, () => {
+        return '';
+    })
 }

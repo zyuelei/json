@@ -76,10 +76,12 @@ const setAutoFormat = (key: supportAutoType) => {
   <div>
     <a-form :label-col="labelCol" :wrapper-col="wrapperCol">
       <a-form-item label="tab大小">
-        <a-input type="number" :value="getConfig('tabSize')" @input="setConfigLocal('tabSize', $event.target.value)"/>
+        <a-input-number :value="getConfig('tabSize')" style="width: 100%"
+                        @input="setConfigLocal('tabSize', $event.target.value)" :min="1" :max="100"/>
       </a-form-item>
       <a-form-item label="字体大小">
-        <a-input type="number" :value="getConfig('fontSize')" @input="setConfigLocal('fontSize', $event.target.value)"/>
+        <a-input-number :value="getConfig('fontSize')" style="width: 100%"
+                        @input="setConfigLocal('fontSize', $event.target.value)" :min="1" :max="100"/>
       </a-form-item>
       <!--      <a-form-item label="printMargin">-->
       <!--        <a-checkbox :checked="getConfig('printMargin')" @change="setConfigLocal('printMargin', $event.target.checked)"/>-->

@@ -8,42 +8,48 @@ interface UseDoubleShiftDetectorParams {
     activeKey: Ref<number>,
 }
 
+function checkDataExists(data: panesInterface) {
+    return panes.value.filter(value => value.key == data.key).length <= 0;
+}
+
+const {saveData, loadData, removeData} = useDataOperateDetector({
+    onLoadData: function (data: panesInterface) {
+        if (!data) {
+            return false;
+        }
+        if (!checkDataExists(data)) {
+            return true
+        }
+        data.init = false;
+        panes.value.push(data)
+        return true;
+    }
+})
+const {getConfig} = useSetConfigDetector({
+    onConfigChange: (key, value) => {
+        if (key == 'saveData' && value) {
+            panes.value.map((value, index) => saveData(toRaw(value), index))
+        }
+    }
+})
+
+const _defaultPanesValue: panesInterface = {
+    title: 'temp',
+    key: 0,
+    closable: false,
+    favorite: true,
+    content: '',
+    time: 0,
+    render: getConfig('render'),
+    init: true
+};
+
+const panes = ref<panesInterface[]>([_defaultPanesValue]);
+
 export function useSetValueDetector({
                                         activeKey,
                                     }: UseDoubleShiftDetectorParams) {
 
-    const {getConfig} = useSetConfigDetector({
-        onConfigChange: (key, value) => {
-            if (key == 'saveData' && value) {
-                panes.value.map((value, index) => saveData(toRaw(value), index))
-            }
-        }
-    })
-    const _defaultPanesValue: panesInterface = {
-        title: 'temp',
-        key: 0,
-        closable: false,
-        favorite: true,
-        content: '',
-        time: 0,
-        render: getConfig('render'),
-        init: true
-    };
-
-    const {saveData, loadData, removeData} = useDataOperateDetector({
-        onLoadData: function (data: panesInterface) {
-            if (!data) {
-                return false;
-            }
-            if (!checkDataExists(data)) {
-                return true
-            }
-            data.init = false;
-            panes.value.push(data)
-            return true;
-        }
-    })
-    const panes = ref<panesInterface[]>([_defaultPanesValue]);
     const activeIndex = computed(() => {
         return panes.value.findIndex(obj => obj.key === activeKey.value)
     })
@@ -51,10 +57,6 @@ export function useSetValueDetector({
     const activeData = computed(() => {
         return panes.value[activeIndex.value]
     })
-
-    function checkDataExists(data: panesInterface) {
-        return panes.value.filter(value => value.key == data.key).length <= 0;
-    }
 
     const deleteData = (targetKey: number) => {
         let lastIndex = 0;
@@ -142,5 +144,19 @@ export function useSetValueDetector({
         return panes.value[nextKey].key;
     }
 
-    return {panesData: panes, activeIndex, activeData, loadData, addData, deleteData, tabOperate, calcNextKey, setSaveValue};
+    return {
+        panesData: panes,
+        activeIndex,
+        activeData,
+        loadData,
+        addData,
+        deleteData,
+        tabOperate,
+        calcNextKey,
+        setSaveValue
+    };
+}
+
+export function usePanesData() {
+    return toRaw(panes);
 }
