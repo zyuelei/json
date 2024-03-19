@@ -2,11 +2,12 @@
 import {h, nextTick, onBeforeUnmount, onMounted, ref} from 'vue';
 import BraceTemplate from "./BraceTemplate.vue";
 import MonacoTemplate from "./MonacoTemplate.vue";
+import Setting from "./Setting.vue";
+
 import {
   configListenerInterface,
   ContentSelectType,
   editContentMy,
-  getNextEnumValue,
   matchRangeMy,
   rangeMy,
   supportAutoType,
@@ -35,6 +36,7 @@ import {useDoubleShiftDetector, useSetConfigDetector, useSetValueDetector} from 
 const childElementRefs = ref();
 const tabsContainerRef = ref();
 const showAltAlert = ref(false)
+const settingShow = ref(true)
 
 const onConfigChange: configListenerInterface = (key, value) => {
   switch (key) {
@@ -43,7 +45,7 @@ const onConfigChange: configListenerInterface = (key, value) => {
       break;
   }
 };
-const {getConfig, setConfig, unConfigChange} = useSetConfigDetector({
+const {getConfig, unConfigChange} = useSetConfigDetector({
   onConfigChange
 })
 const theme = ref<string>(getConfig('theme'));
@@ -773,114 +775,6 @@ const handleTabMenuClick = (clickInfo: any) => {
   }
 }
 
-const handleConfigMenuClick = (clickInfo: any) => {
-  let configAutoFormat = getConfig('autoFormat');
-  switch (clickInfo.key) {
-    case "useWrap":
-      setConfig('useWrap', !getConfig('useWrap'))
-      break;
-    case "switchCode":
-      if (activeData.value.content) {
-        message.error('有数据无法切换');
-        return
-      }
-      const newRender = getNextEnumValue(supportEditTemplateType, activeData.value.render)
-      setConfig('render', newRender)
-      setSaveValue('render', newRender)
-      break;
-    case "switchTheme":
-      const nextTheme: any = {
-        dark: 'light',
-        light: 'dark'
-      }
-      const nextThemeEl = nextTheme[getConfig('theme')];
-      setConfig('theme', nextThemeEl || 'light')
-      break;
-    case "autoTypeUnicode":
-      let unicodeIndex = configAutoFormat.indexOf(supportAutoType.unicode);
-      if (unicodeIndex > -1) {
-        configAutoFormat.splice(unicodeIndex, 1);
-      } else {
-        configAutoFormat.push(supportAutoType.unicode)
-      }
-      setConfig('autoFormat', configAutoFormat)
-      break;
-    case "autoTypeGet":
-      let getIndex = configAutoFormat.indexOf(supportAutoType.get_param);
-      if (getIndex > -1) {
-        configAutoFormat.splice(getIndex, 1);
-      } else {
-        configAutoFormat.push(supportAutoType.get_param)
-      }
-      setConfig('autoFormat', configAutoFormat)
-      break;
-    case "autoTypeArchive":
-      const archiveIndex = configAutoFormat.indexOf(supportAutoType.archive);
-      if (archiveIndex > -1) {
-        configAutoFormat.splice(archiveIndex, 1);
-      } else {
-        configAutoFormat.push(supportAutoType.archive)
-      }
-      setConfig('autoFormat', configAutoFormat)
-      break;
-    case "defaultNewTab":
-      setConfig('defaultNewTab', !getConfig('defaultNewTab'))
-      break;
-    case "saveDataSwitch":
-      setConfig('saveData', !getConfig('saveData'));
-      break;
-    case "doubleShiftKeyDown":
-      setConfig('doubleShiftKeyDown', !getConfig('doubleShiftKeyDown'))
-      break;
-    case "autoTypeExtract":
-      let extractIndex = configAutoFormat.indexOf(supportAutoType.extractJson);
-      if (extractIndex > -1) {
-        configAutoFormat.splice(extractIndex, 1);
-      } else {
-        configAutoFormat.push(supportAutoType.extractJson)
-      }
-      setConfig('autoFormat', configAutoFormat)
-      break;
-    case 'useDesc':
-      const instructions = [
-        "默认行为：粘贴自动格式化json，支持unicode字符(如：\\x22、\\u0031)的转码自动格式化 快捷键：ctrl + v",
-        "格式化：在【选中处/全局】一些需要二次格式化的时候(如：[get]后)可手动调用 快捷键：ctrl + center / alt + enter",
-        "新建tab：ctrl + t / alt + t",
-        "新建tab并粘贴格式化：ctrl + n / alt + n",
-        "新建tab并粘贴【选中处/光标处】内容格式化：ctrl + j / alt + j",
-        "切换tab：ctrl + tab  /  ctrl + shift + tab",
-        "关闭tab：ctrl + q / alt + q",
-        "重命名tab：双击shift",
-        "锁定/解锁tab：锁定后无法通过[关闭tab]快捷键关闭当前tab 快捷键：ctrl + shift + L / alt + shift + L",
-        "get：在【光标处/全局】解析get参数，并尝试转为json 示例：a=1&b=1 快捷键：alt + 1",
-        "url：在【光标处/全局】url_decode，并尝试转为json 示例：%7B%22a%22%3A%221%22%7D 快捷键：alt + 2",
-        "base64：在【光标处/全局】进行url_decode及base64_decode，并尝试转为json 示例：eyJhIjoiMSJ9 快捷键：alt + 3",
-        "serialize：在【光标处/全局】进行unserialize，并尝试转为json 快捷键：alt + 4",
-        "timestamp：在【光标处/全局】进行【10位时间戳/y-m-d H:i:s】格式的转换,若无法转换则会插入当前时间的10位时间戳 快捷键：alt + 5",
-        "unicode：在【光标处/全局】进行unicode_decode解码，并尝试转为json 示例 \\x22 \\u0031 快捷键：alt + 6",
-        "复制form：在【选中处/全局】复制key:value格式的json数据，用于postman等软件的导入 快捷键：alt + 8",
-        "复制压缩：在【选中处/全局】复制去除回车、空格后的压缩数据 快捷键：alt + 9",
-        "仅粘贴：在【选中处/全局】粘贴，并不做格式化操作 快捷键：alt + 0",
-        "注释：【全局】指当前tab内所有内容；【光标处】指被光标在双引号包裹的单行字符串中；【选中处】指光标选中的内容",
-        "快捷键仅针对windows的utools环境，其余环境可能会略有不同或无法支持",
-      ];
-
-      let content = h('div',
-          instructions.map(instruction => h('p', instruction))
-      );
-
-      Modal.info({
-        width: '100%',
-        title: '使用说明',
-        wrapClassName: 'useDescContainer',
-        okText: '这不是小菜一碟',
-        content: content,
-      });
-
-      break
-  }
-}
-
 const handleResize = () => {
   nextTick(() => {
     const activeTab = tabsContainerRef.value[activeIndex.value]
@@ -1106,49 +1000,9 @@ function renameShowModel() {
           </a-button>
         </a-dropdown>
 
-        <a-dropdown placement="top">
-          <a-button style="height: 100%">
-            <SettingOutlined/>
-          </a-button>
-          <template #overlay>
-            <a-menu @click="handleConfigMenuClick">
-              <a-menu-item style="width: 130px" key="autoTypeExtract">
-                去除头尾非json {{ getConfig('autoFormat').includes(supportAutoType.extractJson) ? '√' : '' }}
-              </a-menu-item>
-              <!--              <a-menu-item style="width: 130px" key="autoTypeArchive">-->
-              <!--                微信非断行空格 {{ contentConfig.autoFormat.includes(supportAutoType.archive) ? '√' : '' }}-->
-              <!--              </a-menu-item>-->
-              <a-menu-item style="width: 130px" key="autoTypeGet">
-                自动get {{ getConfig('autoFormat').includes(supportAutoType.get_param) ? '√' : '' }}
-              </a-menu-item>
-              <a-menu-item style="width: 130px" key="autoTypeUnicode">
-                强制unicode {{ getConfig('autoFormat').includes(supportAutoType.unicode) ? '√' : '' }}
-              </a-menu-item>
-              <a-menu-item style="width: 130px" key="defaultNewTab">
-                自动新建tab {{ getConfig('defaultNewTab') ? '√' : '' }}
-              </a-menu-item>
-              <a-menu-item style="width: 130px" key="saveDataSwitch">
-                保存数据 {{ getConfig('saveData') ? '√' : '' }}
-              </a-menu-item>
-              <a-menu-item style="width: 130px" key="doubleShiftKeyDown">
-                双击shift重命名 {{ getConfig('doubleShiftKeyDown') ? '√' : '' }}
-              </a-menu-item>
-              <a-menu-item style="width: 130px" key="useWrap">
-                切换为:{{ getConfig('useWrap') ? '不折行' : '折行' }}
-              </a-menu-item>
-              <a-menu-item style="width: 130px" key="switchTheme">
-                切换主题为:{{ getConfig('theme') == 'light' ? '黑暗' : '明亮' }}
-              </a-menu-item>
-              <a-menu-item style="width: 130px" key="switchCode">
-                切换渲染器
-              </a-menu-item>
-              <a-menu-item style="width: 130px" key="useDesc">
-                使用说明
-              </a-menu-item>
-            </a-menu>
-          </template>
-        </a-dropdown>
-
+        <a-button @click="settingShow=true" style="height: 100%">
+          <SettingOutlined/>
+        </a-button>
       </template>
       <a-tab-pane forceRender v-for="pane in panesData" :key="pane.key" :tab="pane.title"
                   :closable="pane.closable || !pane.favorite"
@@ -1186,6 +1040,13 @@ function renameShowModel() {
       </div>
 
     </a-space>
+    <a-drawer
+        v-model:open="settingShow"
+        title="编辑器设置"
+        placement="right"
+    >
+      <Setting></Setting>
+    </a-drawer>
   </div>
 </template>
 

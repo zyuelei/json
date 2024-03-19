@@ -13,7 +13,6 @@ export function useDataOperateDetector({
     let saveList: number[] = [];
     const saveListKey = 'data_list';
     const saveDataKeyPrefix = 'data_content_';
-    const saveArchiveDataKeyPrefix = 'archive_content_';
 
     const {getConfig} = useSetConfigDetector({})
 
