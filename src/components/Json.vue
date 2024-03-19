@@ -36,7 +36,7 @@ import {useDoubleShiftDetector, useSetConfigDetector, useSetValueDetector} from 
 const childElementRefs = ref();
 const tabsContainerRef = ref();
 const showAltAlert = ref(false)
-const settingShow = ref(true)
+const settingShow = ref(false)
 
 const onConfigChange: configListenerInterface = (key, value) => {
   switch (key) {
@@ -1042,6 +1042,7 @@ function renameShowModel() {
     </a-space>
     <a-drawer
         v-model:open="settingShow"
+        @close="contentRefSetFocus"
         title="编辑器设置"
         placement="right"
     >
