@@ -13,6 +13,7 @@ export function useDataOperateDetector({
     let saveList: number[] = [];
     const saveListKey = 'data_list';
     const saveDataKeyPrefix = 'data_content_';
+    const saveArchiveDataKeyPrefix = 'archive_content_';
 
     const {getConfig} = useSetConfigDetector({})
 
@@ -22,6 +23,20 @@ export function useDataOperateDetector({
         }
         const list = windowGetContent(saveListKey);
         saveList = !Array.isArray(list) || list.length == 0 ? [] : list;
+
+        // 恢复数据
+        const allDocs = windowAllContent(saveDataKeyPrefix);
+        let recoverFlag = false;
+        allDocs.map((value: any) => {
+            const id = Number(value._id.substring(saveDataKeyPrefix.length))
+            if (!saveList.includes(id)) {
+                saveList.push(id)
+                recoverFlag = true
+            }
+        })
+        if (recoverFlag) {
+            setSaveDataList(saveList)
+        }
         return saveList;
     }
 
@@ -69,14 +84,6 @@ export function useDataOperateDetector({
             const res = onLoadData(data)
             if (!res) {
                 removeKey.push(key)
-            }
-        })
-        const allDocs = windowAllContent(saveDataKeyPrefix);
-        allDocs.map((value: any) => {
-            const id = Number(value._id.substring(saveDataKeyPrefix.length))
-            if (!list.includes(id)) {
-                removeKey.push(id)
-                console.info('delete', id, removeKey, list)
             }
         })
         if (removeKey) {

@@ -69,7 +69,12 @@ window.getContent = (key) => {
     return toolsFun(() => {
         return utools.dbStorage.getItem(key)
     }, () => {
-        return JSON.parse(localStorage.getItem(key));
+        const val = localStorage.getItem(key);
+        try {
+            return JSON.parse(val);
+        } catch (e) {
+            return val
+        }
     })
 }
 
