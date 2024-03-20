@@ -1107,6 +1107,10 @@ function renameShowModel() {
   background: #303133;
 }
 
+.light {
+  background: #ffffff;
+}
+
 .operateBtnSmall {
   margin-left: 2px;
   width: 64px;
