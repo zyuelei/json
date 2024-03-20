@@ -213,7 +213,6 @@ window.getPath = function (name) {
 }
 
 window.isDir = function (path, callback) {
-    debugger
     return toolsFun(() => {
         return fs.stat(path, (err, stats) => {
             if (err) {
