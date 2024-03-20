@@ -6,7 +6,6 @@ import Setting from "./Setting.vue";
 import Archive from "./Archive.vue";
 
 import {
-  configListenerInterface,
   ContentSelectType,
   editContentMy,
   matchRangeMy,
@@ -46,7 +45,7 @@ const showAltAlert = ref(false)
 const settingShow = ref(false)
 
 const props = defineProps(['theme'])
-const {getConfig, unConfigChange} = useSetConfigDetector({})
+const {getConfig} = useSetConfigDetector({})
 
 const activeKey = ref(0);
 const {
@@ -911,7 +910,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
   window.removeEventListener('keydown', handleKeyDown)
   window.removeEventListener('keyup', handleKeyUp)
-  unConfigChange(onConfigChange)
 });
 
 onMounted(() => {
