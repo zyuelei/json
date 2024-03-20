@@ -124,26 +124,26 @@ window.readFile = function (path, callback) {
     return toolsFun(() => {
         fs.readFile(path, 'utf8', (err, data) => {
             if (err) {
-                callback && callback('', false);
+                callback && callback(false, '');
                 return
             }
-            callback && callback(data, true); // 打印文件列表
+            callback && callback(true, data); // 打印文件列表
         });
     }, () => {
-        callback && callback([], false);
+        callback && callback(false, '');
     })
 }
 window.readDirList = function (path, callback) {
     return toolsFun(() => {
         fs.readdir(path, (err, files) => {
             if (err) {
-                callback && callback([], false);
+                callback && callback(false, []);
                 return
             }
-            callback && callback(files, true); // 打印文件列表
+            callback && callback(true, files); // 打印文件列表
         });
     }, () => {
-        callback && callback([], false);
+        callback && callback(false, []);
     })
 }
 window.mkdir = function (path, callback) {
@@ -183,6 +183,18 @@ window.addFile = function (path, content, callback, isAppend) {
     })
 }
 
+window.unlinkFile = (path, callback) => {
+    toolsFun(() => {
+        fs.unlink(path, (err) => {
+            if (err) {
+                callback && callback(false);
+                return
+            }
+            callback && callback(true)
+        });
+    })
+}
+
 window.getNativeId = function () {
     return toolsFun(() => {
         return utools.getNativeId()
@@ -197,5 +209,36 @@ window.getPath = function (name) {
         return utools.getPath(name)
     }, () => {
         return '';
+    })
+}
+
+window.isDir = function (path, callback) {
+    debugger
+    return toolsFun(() => {
+        return fs.stat(path, (err, stats) => {
+            if (err) {
+                callback && callback(false)
+                return;
+            }
+
+            if (stats.isDirectory()) {
+                callback && callback(true)
+            } else {
+                callback && callback(false)
+            }
+        });
+    }, () => {
+        callback(false)
+    })
+}
+
+window.showOpenDialog = function () {
+    return toolsFun(() => {
+        return utools.showOpenDialog({
+            defaultPath: getPath('documents'),
+            properties: ['openDirectory', 'createDirectory']
+        }, () => {
+            return ''
+        })
     })
 }

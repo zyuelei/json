@@ -32,6 +32,7 @@ export interface systemConfigInterface {
 export interface configListenerInterface {
     <T extends keyof systemConfigInterface>(key: T, value: systemConfigInterface[T]): void
 }
+
 export interface rangeMy {
     startLine: number,
     endLine: number,
@@ -73,6 +74,13 @@ export interface panesInterface {
     render: supportEditTemplateType,
 }
 
+export interface archiveDataInterface {
+    key: string;
+    name: string,
+    time: number,
+    formatTime: string,
+    type: 'online' | 'local'
+}
 
 export function getNextEnumValue<T extends Record<string, string | number>>(enumType: T, currentEnum: number): T[keyof T] {
     const enumValues = (Object.values(enumType).filter(value => typeof value === 'number') as unknown) as Array<T[keyof T]>;

@@ -31,7 +31,13 @@ import {
   unicodeDecode,
   urlDecode
 } from "../tools/AllEncoder";
-import {windowCopy, windowGetClipboardContent, windowIsMac, windowPluginEnter} from "../tools/windowTool.ts";
+import {
+  windowCopy,
+  windowGetClipboardContent,
+  windowIsMac,
+  windowPluginEnter,
+  windowValidStr
+} from "../tools/windowTool.ts";
 import {useDoubleShiftDetector, useSetConfigDetector, useSetValueDetector} from "../tools/detector";
 
 const childElementRefs = ref();
@@ -935,6 +941,10 @@ function renameShowModel() {
     renameModal && renameModal.destroy();
   }
   const done = () => {
+    if (windowValidStr(inputValue.value)) {
+      message.error('不可包含特殊字符串');
+      return false;
+    }
     inputValue.value && setSaveValue('title', inputValue.value)
     destroy();
     contentRefSetFocus();
@@ -949,6 +959,7 @@ function renameShowModel() {
     render() {
       return h(Input, {
         ref: inputRef,
+        status: windowValidStr(inputValue.value) ? 'error' : '',
         modelValue: inputValue.value, // 绑定输入值
         onInput: (event: any) => {    // 使用 onInput 代替 onUpdate:modelValue
           inputValue.value = event.target.value;  // 更新输入值
@@ -1056,11 +1067,11 @@ function renameShowModel() {
           v-model:open="settingShow"
           @close="contentRefSetFocus"
           title="编辑器设置"
-          :body-style="{paddingTop: '2px'}"
+          :body-style="{paddingTop: '2px', height: '100%'}"
           placement="right"
       >
-        <a-tabs centered>
-          <a-tab-pane style="margin-top:8px;" key="1" tab="归档管理">
+        <a-tabs centered style="height: 100%">
+          <a-tab-pane style="height:100%;padding-top:8px;" key="1" tab="归档管理">
             <Archive></Archive>
           </a-tab-pane>
           <a-tab-pane style="margin-top:8px;" key="2" tab="基础设置">

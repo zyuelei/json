@@ -1,8 +1,20 @@
 <script setup lang="ts">
 import type {UnwrapRef} from 'vue';
-import {reactive} from 'vue';
-import {useArchiveLocalDirData} from "../tools/detector";
-import {usePanesData} from "../tools/detector";
+import {onMounted, reactive, ref} from 'vue';
+import {useArchiveLocalDirData, useGetPanesData, useSetPanesData} from "../tools/detector";
+import {Form, message, Modal} from "ant-design-vue";
+import {archiveDataInterface, panesInterface} from "../interface";
+import {
+  windowAddFile,
+  windowIsDir,
+  windowMkdir,
+  windowReadFile,
+  windowReplace,
+  windowShowOpenDialog,
+  windowValidStr
+} from "../tools/windowTool.ts";
+
+import type {Rule} from 'ant-design-vue/es/form';
 
 interface FormState {
   layout: 'local' | 'online';
@@ -13,7 +25,27 @@ const formState: UnwrapRef<FormState> = reactive({
   layout: 'local',
   name: ''
 });
+const validStr = async (_rule: Rule, value: string) => {
+  if (windowValidStr(value)) {
+    return Promise.reject('Please input the password again');
+  } else {
+    return Promise.resolve();
+  }
+}
 
+const rulesRef = reactive({
+  name: [
+    {
+      required: true,
+      message: '请输入存档名',
+    },
+    {
+      validator: validStr,
+      message: '存档名包含特殊字符串'
+    }
+  ],
+});
+const {validate, validateInfos} = Form.useForm(formState, rulesRef, {});
 const columns = [
   {
     name: 'Name',
@@ -22,110 +54,208 @@ const columns = [
     ellipsis: true,
   },
   {
+    name: 'Time',
+    dataIndex: 'formatTime',
+    key: 'time',
+    width: 70,
+  },
+  {
     title: 'Action',
     key: 'action',
-    width: 96,
+    width: 136,
   },
 ];
 
-const data = [
-  {
-    key: '1',
-    name: '这是一个归档的名字啊这是一个归档的名字啊这是一个归档的名字啊这是一个归档的名字啊',
-    time: '01/03 18:12',
-  },
-  {
-    key: '1',
-    name: '这是一个归档的名字啊这是一个归档的名字啊这是一个归档的名字啊这是一个归档的名字啊',
-    time: '01/03 18:12',
-  },
-  {
-    key: '1',
-    name: '这是一个归档的名字啊这是一个归档的名字啊这是一个归档的名字啊这是一个归档的名字啊',
-    time: '01/03 18:12',
-  },
-];
 
+const dataRef = ref<archiveDataInterface[]>([]);
+const {addArchiveLocalDirData, loadArchiveLocalDirData, recoverArchiveLocalDirData, deleteArchiveLocalDirData, getArchiveLocalDirSavePath} = useArchiveLocalDirData();
+
+const loadData = () => {
+  loadArchiveLocalDirData((status, data) => {
+    if (status) {
+      dataRef.value = [...data]
+    }
+  })
+}
 const addArchive = () => {
-  debugger
-  const {addArchiveLocalDirData} = useArchiveLocalDirData();
-  var panesData = JSON.stringify(usePanesData());
-  addArchiveLocalDirData(formState.name, panesData)
+  validate()
+      .then(() => {
+        const panesData = JSON.stringify(useGetPanesData());
+        addArchiveLocalDirData(formState.name, panesData, (status) => {
+          if (!status) {
+            Modal.error({
+              content: '保存异常',
+              maskClosable: true,
+            })
+          } else {
+            loadData();
+          }
+        })
+      })
+      .catch();
+}
+
+const validData = (status: boolean, data: panesInterface[]) => {
+  if (!status) {
+    message.error('恢复时读取数据异常');
+    return false;
+  }
+  const filterData = data.filter((v) => {
+    return !v.title || typeof v.content === void 0 || typeof v.key === void 0
+  });
+  if (filterData.length) {
+    message.error('恢复时数据转换异常');
+    return false;
+  }
+
+  return data.map((v) => {
+    v.init = false
+    return v;
+  });
+}
+const recoverArchive = (key: string) => {
+  recoverArchiveLocalDirData(key, (status, value) => {
+    const pan = useGetPanesData();
+    if (pan.length > 1 || pan[0].key != 0) {
+      message.error('标签栏已有数据无法恢复');
+      return;
+    }
+    const result = validData(status, value);
+    if (!result) {
+      return;
+    }
+    useSetPanesData(result)
+    message.success('恢复成功');
+  });
+}
+
+const deleteArchive = (key: string) => {
+  deleteArchiveLocalDirData(key, (status) => {
+    if (!status) {
+      message.error('删除失败');
+      return;
+    }
+    loadData()
+    message.success('删除成功');
+  })
+}
+onMounted(() => {
+  loadData();
+})
+const exportArchive = (data: archiveDataInterface) => {
+  const choosePathArr = windowShowOpenDialog();
+  if (!choosePathArr || choosePathArr.length != 1) {
+    message.error('选择文件夹失败');
+    return;
+  }
+  const choosePath = choosePathArr[0]
+  windowIsDir(choosePath, (status) => {
+    if (!status) {
+      message.error('选择的不是一个文件夹');
+      return;
+    }
+    const dataPath = getArchiveLocalDirSavePath() + data.key;
+    windowReadFile(dataPath, (status, value) => {
+      const parseData: panesInterface[] = JSON.parse(value) || [];
+      const result = validData(status, parseData);
+      if (!result) {
+        return;
+      }
+      const savePath = choosePath + '/' + data.time + '_' + windowReplace(data.name) + '/';
+      windowMkdir(savePath, (status) => {
+        if (!status) {
+          message.error('创建保存文件夹失败');
+          return;
+        }
+        result.map((v: panesInterface) => {
+          if (!v.key) {
+            return;
+          }
+          const fileName = v.key + '_' + windowReplace(v.title) + '.json';
+          windowAddFile(savePath + fileName, v.content)
+        })
+      })
+    })
+  })
 }
 </script>
 
 <template>
-  <div>
-    <a-form layout="inline" :model="formState">
-      <!--      <a-form-item label="">-->
-      <!--        <a-radio-group v-model:value="formState.layout">-->
-      <!--          <a-radio-button value="online">云端</a-radio-button>-->
-      <!--          <a-radio-button value="local">本地</a-radio-button>-->
-      <!--        </a-radio-group>-->
-      <!--      </a-form-item>-->
-      <a-form-item label="">
-        <a-input v-model:value="formState.name" style="width: 220px;margin-left: 22px" placeholder="请输入归档名"/>
-      </a-form-item>
-      <a-form-item>
-        <a-button type="default" @click="addArchive">新建归档</a-button>
-      </a-form-item>
-    </a-form>
 
-    <div v-show="formState.layout=='local'">
-      <a-divider style="margin-top: 14px" :plain="true"></a-divider>
-
-      <a-table :columns="columns" :show-header="false" :data-source="data"
-               :pagination="{hideOnSinglePage:true}">
+  <a-flex gap="middle" vertical style="height: 100%">
+    <a-flex>
+      <a-form layout="inline" :model="formState">
+        <!--      <a-form-item label="">-->
+        <!--        <a-radio-group v-model:value="formState.layout">-->
+        <!--          <a-radio-button value="online">云端</a-radio-button>-->
+        <!--          <a-radio-button value="local">本地</a-radio-button>-->
+        <!--        </a-radio-group>-->
+        <!--      </a-form-item>-->
+        <a-form-item label="" v-bind="validateInfos.name" style="width: 220px;margin-left: 22px">
+          <a-input v-model:value="formState.name" placeholder="请输入归档名"/>
+        </a-form-item>
+        <a-form-item>
+          <a-button type="default" @click="addArchive">新建归档</a-button>
+        </a-form-item>
+      </a-form>
+    </a-flex>
+    <a-flex>
+      <a-divider style="margin:4px" :plain="true"></a-divider>
+    </a-flex>
+    <a-flex flex="1" v-show="formState.layout=='local'"
+            style="overflow: scroll;height: 100%;">
+      <a-table :columns="columns" :show-header="false" :data-source="dataRef"
+               :pagination="false">
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'name'">
             {{ record.name }}
           </template>
           <template v-else-if="column.key === 'action'">
-            <a-button type="link" size="small">恢复</a-button>
-            <a-button type="link" size="small">打开</a-button>
+            <a-button type="link" size="small" @click="recoverArchive(record.key)">恢复</a-button>
+            <a-button type="link" size="small" @click="exportArchive(record)">导出</a-button>
+            <a-button type="link" size="small" @click="deleteArchive(record.key)">删除</a-button>
           </template>
         </template>
       </a-table>
-    </div>
+    </a-flex>
+  </a-flex>
 
+  <!--    <div v-show="formState.layout=='online'">-->
+  <!--      <a-divider style="margin-top: 14px" :plain="true">目前仅可保存五个云端存档</a-divider>-->
 
-    <!--    <div v-show="formState.layout=='online'">-->
-    <!--      <a-divider style="margin-top: 14px" :plain="true">目前仅可保存五个云端存档</a-divider>-->
+  <!--      <a-table :columns="columns" :show-header="false" :data-source="data"-->
+  <!--               :pagination="{hideOnSinglePage:true}">-->
+  <!--        <template #bodyCell="{ column, record }">-->
+  <!--          <template v-if="column.key === 'name'">-->
+  <!--            {{ record.name }}-->
+  <!--          </template>-->
+  <!--          <template v-else-if="column.key === 'time'">-->
+  <!--            {{ record.time }}-->
+  <!--          </template>-->
+  <!--          <template v-else-if="column.key === 'action'">-->
+  <!--            <a-button type="link" size="small">导出</a-button>-->
+  <!--            <a-button type="link" size="small">恢复</a-button>-->
+  <!--            <a-button type="link" size="small" danger>删除</a-button>-->
+  <!--          </template>-->
+  <!--        </template>-->
+  <!--      </a-table>-->
+  <!--    </div>-->
 
-    <!--      <a-table :columns="columns" :show-header="false" :data-source="data"-->
-    <!--               :pagination="{hideOnSinglePage:true}">-->
-    <!--        <template #bodyCell="{ column, record }">-->
-    <!--          <template v-if="column.key === 'name'">-->
-    <!--            {{ record.name }}-->
-    <!--          </template>-->
-    <!--          <template v-else-if="column.key === 'time'">-->
-    <!--            {{ record.time }}-->
-    <!--          </template>-->
-    <!--          <template v-else-if="column.key === 'action'">-->
-    <!--            <a-button type="link" size="small">导出</a-button>-->
-    <!--            <a-button type="link" size="small">恢复</a-button>-->
-    <!--            <a-button type="link" size="small" danger>删除</a-button>-->
-    <!--          </template>-->
-    <!--        </template>-->
-    <!--      </a-table>-->
-    <!--    </div>-->
+  <!--    <div v-show="formState.layout=='local'">-->
+  <!--      <a-divider style="margin-top: 14px" :plain="true"></a-divider>-->
+  <!--          <a-card hoverable style="width: 300px;height: 300px;text-align: center;margin: auto">-->
+  <!--            <a-flex gap="middle" vertical>-->
+  <!--              <a-flex :vertical="true" justify="space-between" align="center">-->
+  <!--                <ImportOutlined style="font-size: 50px;margin-top: 40px"></ImportOutlined>-->
+  <!--              </a-flex>-->
+  <!--              <a-flex :vertical="true" justify="space-between" align="center">-->
+  <!--                <div style="text-align: center;margin-top: 40px">本地归档无法查看列表</div>-->
+  <!--                <div style="text-align: center;margin-top: 40px">点击加载本地归档文件夹恢复至tab</div>-->
+  <!--              </a-flex>-->
+  <!--            </a-flex>-->
 
-    <!--    <div v-show="formState.layout=='local'">-->
-    <!--      <a-divider style="margin-top: 14px" :plain="true"></a-divider>-->
-    <!--          <a-card hoverable style="width: 300px;height: 300px;text-align: center;margin: auto">-->
-    <!--            <a-flex gap="middle" vertical>-->
-    <!--              <a-flex :vertical="true" justify="space-between" align="center">-->
-    <!--                <ImportOutlined style="font-size: 50px;margin-top: 40px"></ImportOutlined>-->
-    <!--              </a-flex>-->
-    <!--              <a-flex :vertical="true" justify="space-between" align="center">-->
-    <!--                <div style="text-align: center;margin-top: 40px">本地归档无法查看列表</div>-->
-    <!--                <div style="text-align: center;margin-top: 40px">点击加载本地归档文件夹恢复至tab</div>-->
-    <!--              </a-flex>-->
-    <!--            </a-flex>-->
-
-    <!--          </a-card>-->
-    <!--    </div>-->
-  </div>
+  <!--          </a-card>-->
+  <!--    </div>-->
 </template>
 
 <style scoped>

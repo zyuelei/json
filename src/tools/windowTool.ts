@@ -60,17 +60,17 @@ export function windowAllContent(prefix?: string) {
     return window.allContent && window.allContent(prefix)
 }
 
-export function windowReadFile(path: string, callback: (value: string, status: boolean) => void) {
+export function windowReadFile(path: string, callback?: (status: boolean, value: string) => void) {
     // @ts-ignore
     return window.readFile && window.readFile(path, callback)
 }
 
-export function windowReadDirList(path: string, callback: (value: string[], status: boolean) => void) {
+export function windowReadDirList(path: string, callback?: (status: boolean, value: string[]) => void) {
     // @ts-ignore
     return window.readDirList && window.readDirList(path, callback)
 }
 
-export function windowMkdir(path: string, callback: (status: boolean) => void) {
+export function windowMkdir(path: string, callback?: (status: boolean) => void) {
     // @ts-ignore
     return window.mkdir && window.mkdir(path, callback)
 }
@@ -78,6 +78,11 @@ export function windowMkdir(path: string, callback: (status: boolean) => void) {
 export function windowAddFile(path: string, content: string, callback?: (status: boolean) => void, isAppend ?: boolean) {
     // @ts-ignore
     return window.addFile && window.addFile(path, content, callback, isAppend)
+}
+
+export function windowUnlinkFile(path: string, callback?: (status: boolean) => void) {
+    // @ts-ignore
+    return window.unlinkFile && window.unlinkFile(path, callback)
 }
 
 export function windowGetNativeId(): string {
@@ -89,3 +94,24 @@ export function windowGetPath(name: 'home' | 'appData' | 'userData' | 'temp' | '
     // @ts-ignore
     return window.getPath && window.getPath(name)
 }
+
+export function windowIsDir(path: string, callback?: (status: boolean) => void) {
+    // @ts-ignore
+    return window.isDir && window.isDir(path, callback)
+}
+
+export function windowShowOpenDialog(): string {
+    // @ts-ignore
+    return window.showOpenDialog && window.showOpenDialog()
+}
+
+export function windowReplace(str: string) {
+    const specialChars = /[:\\\/|?*"<>]/g;
+    return str.replace(specialChars, '_');
+}
+
+export function windowValidStr(str: string) {
+    const specialChars = /[:\\\/|?*"<>']/g;
+    return specialChars.test(str)
+}
+

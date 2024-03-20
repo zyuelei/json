@@ -12,18 +12,20 @@ function checkDataExists(data: panesInterface) {
     return panes.value.filter(value => value.key == data.key).length <= 0;
 }
 
-const {saveData, loadData, removeData} = useDataOperateDetector({
-    onLoadData: function (data: panesInterface) {
-        if (!data) {
-            return false;
-        }
-        if (!checkDataExists(data)) {
-            return true
-        }
-        data.init = false;
-        panes.value.push(data)
-        return true;
+const onloadData = (data: panesInterface) => {
+    if (!data) {
+        return false;
     }
+    if (!checkDataExists(data)) {
+        return true
+    }
+    data.init = false;
+    panes.value.push(data)
+    return true;
+}
+
+const {saveData, loadData, removeData} = useDataOperateDetector({
+    onLoadData: onloadData
 })
 const {getConfig} = useSetConfigDetector({
     onConfigChange: (key, value) => {
@@ -78,7 +80,7 @@ export function useSetValueDetector({
 
     const addData = (nowTime: number) => {
         panes.value.push({
-            title: dayjs(nowTime).format('HH:mm:ss'),
+            title: dayjs(nowTime).format('HH_mm_ss'),
             key: nowTime,
             content: '',
             init: true,
@@ -157,6 +159,15 @@ export function useSetValueDetector({
     };
 }
 
-export function usePanesData() {
-    return toRaw(panes);
+export function useGetPanesData() {
+    return toRaw(panes.value);
+}
+
+export function useSetPanesData(panesData: panesInterface[]) {
+    panesData.map((value) => {
+        const boolean = onloadData(value);
+        if (boolean) {
+            saveData(value)
+        }
+    })
 }
