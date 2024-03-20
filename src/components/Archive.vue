@@ -37,11 +37,11 @@ const rulesRef = reactive({
   name: [
     {
       required: true,
-      message: '请输入存档名',
+      message: '请输入归档名',
     },
     {
       validator: validStr,
-      message: '存档名包含特殊字符串'
+      message: '归档名包含特殊字符串'
     }
   ],
 });
@@ -213,7 +213,15 @@ const exportArchive = (data: archiveDataInterface) => {
           <template v-else-if="column.key === 'action'">
             <a-button type="link" size="small" @click="recoverArchive(record.key)">恢复</a-button>
             <a-button type="link" size="small" @click="exportArchive(record)">导出</a-button>
-            <a-button type="link" size="small" @click="deleteArchive(record.key)">删除</a-button>
+
+            <a-popconfirm
+                title="确认删除归档?"
+                ok-text="Yes"
+                cancel-text="No"
+                @confirm="deleteArchive(record.key)"
+            >
+              <a-button type="link" danger size="small">删除</a-button>
+            </a-popconfirm>
           </template>
         </template>
       </a-table>
@@ -221,7 +229,7 @@ const exportArchive = (data: archiveDataInterface) => {
   </a-flex>
 
   <!--    <div v-show="formState.layout=='online'">-->
-  <!--      <a-divider style="margin-top: 14px" :plain="true">目前仅可保存五个云端存档</a-divider>-->
+  <!--      <a-divider style="margin-top: 14px" :plain="true">目前仅可保存五个云端归档</a-divider>-->
 
   <!--      <a-table :columns="columns" :show-header="false" :data-source="data"-->
   <!--               :pagination="{hideOnSinglePage:true}">-->

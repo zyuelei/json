@@ -38,9 +38,6 @@ const getConfig = <T extends keyof systemConfigInterface>(key: T): systemConfigI
     return contentConfig[key];
 }
 const setConfig = <T extends keyof systemConfigInterface>(key: T, value: systemConfigInterface[T]) => {
-    if (key != 'autoFormat' && contentConfig[key] === value) {
-        return
-    }
     contentConfig[key] = value;
     windowSetContent('config', toRaw(contentConfig))
     callbackList.map(callback => callback(key, value))

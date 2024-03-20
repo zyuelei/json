@@ -22,6 +22,7 @@ if (windowIsDark()) {
   setConfig('theme', 'dark')
 } else {
   setConfig('theme', 'light')
+  // setConfig('theme', 'dark')
 }
 
 windowPluginReady(() => {
@@ -39,7 +40,7 @@ onBeforeUnmount(() => {
     <a-config-provider :theme="{
         algorithm: themeVal == 'light' ? theme.compactAlgorithm : [ theme.compactAlgorithm, theme.darkAlgorithm],
       }">
-      <Json v-if="showSon"></Json>
+      <Json v-model:theme="themeVal" v-if="showSon"></Json>
     </a-config-provider>
   </div>
 </template>

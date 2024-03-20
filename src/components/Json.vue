@@ -45,17 +45,8 @@ const tabsContainerRef = ref();
 const showAltAlert = ref(false)
 const settingShow = ref(false)
 
-const onConfigChange: configListenerInterface = (key, value) => {
-  switch (key) {
-    case 'theme':
-      theme.value = value as string;
-      break;
-  }
-};
-const {getConfig, unConfigChange} = useSetConfigDetector({
-  onConfigChange
-})
-const theme = ref<string>(getConfig('theme'));
+const props = defineProps(['theme'])
+const {getConfig, unConfigChange} = useSetConfigDetector({})
 
 const activeKey = ref(0);
 const {
@@ -988,7 +979,7 @@ function renameShowModel() {
 </script>
 
 <template>
-  <div :class="`container ` + theme">
+  <div :class="`container ` + props.theme">
     <a-tabs forceRender class="tabs" v-model:activeKey="activeKey" @change="setActiveKey" type="editable-card"
             @edit="onEdit">
       <template #rightExtra>
