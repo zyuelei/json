@@ -48,7 +48,6 @@ import {useDoubleShiftDetector, useSetConfigDetector, useSetValueDetector} from 
 
 const childElementRefs = ref();
 const tabsContainerRef = ref();
-const showAltAlert = ref(false)
 const settingShow = ref(false)
 
 const props = defineProps(['theme'])
@@ -911,19 +910,14 @@ const handleKeyDown = (e: KeyboardEvent) => {
   listenCodeShortcutKey(e);
 }
 
-const handleKeyUp = () => {
-  showAltAlert.value = false
-}
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
   window.removeEventListener('keydown', handleKeyDown)
-  window.removeEventListener('keyup', handleKeyUp)
 });
 
 onMounted(() => {
   handleResize()
   window.addEventListener('resize', handleResize);
-  window.addEventListener('keyup', handleKeyUp)
   window.addEventListener('keydown', handleKeyDown)
   // tabindex="0" @keydown="handleKeyDown" @keyup="handleKeyUp"
   contentRefSetFocus();
@@ -1096,15 +1090,15 @@ const help = () => {
           </a-button>
         </div>
         <div>
-          <a-button class="operateBtnSmall" @click="onGetDecode">{{ showAltAlert ? '1' : '' }} get</a-button>
-          <a-button class="operateBtnSmall" @click="onUrlDecode">{{ showAltAlert ? '2' : '' }} url</a-button>
-          <a-button class="operateBtn" @click="onBase64Decode">{{ showAltAlert ? '3' : '' }} base64</a-button>
-          <a-button class="operateBtn" @click="onUnserializeDecode">{{ showAltAlert ? '4' : '' }} serialize</a-button>
-          <a-button class="operateBtn" @click="onTimestampDecode">{{ showAltAlert ? '5' : '' }} timestamp</a-button>
-          <a-button class="operateBtnSmall" @click="onUnicodeDecode">{{ showAltAlert ? '6' : '' }} utf8</a-button>
-          <a-button class="operateBtn" @click="formDataCopy">{{ showAltAlert ? '8' : '' }} 复制form</a-button>
-          <a-button class="operateBtn" @click="archiveCopy">{{ showAltAlert ? '9' : '' }} 复制压缩</a-button>
-          <a-button class="operateBtnSmall" @click="pasteOnly">{{ showAltAlert ? '0' : '' }} 仅粘贴</a-button>
+          <a-button class="operateBtnSmall" @click="onGetDecode">get</a-button>
+          <a-button class="operateBtnSmall" @click="onUrlDecode">url</a-button>
+          <a-button class="operateBtn" @click="onBase64Decode">base64</a-button>
+          <a-button class="operateBtn" @click="onUnserializeDecode">serialize</a-button>
+          <a-button class="operateBtn" @click="onTimestampDecode">timestamp</a-button>
+          <a-button class="operateBtnSmall" @click="onUnicodeDecode">utf8</a-button>
+          <a-button class="operateBtn" @click="formDataCopy">复制form</a-button>
+          <a-button class="operateBtn" @click="archiveCopy">复制压缩</a-button>
+          <a-button class="operateBtnSmall" @click="pasteOnly">仅粘贴</a-button>
         </div>
       </div>
 
