@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type {UnwrapRef} from 'vue';
-import {onMounted, reactive, ref} from 'vue';
+import {h, onMounted, reactive, ref} from 'vue';
 import {useArchiveLocalDirData, useGetPanesData, useSetPanesData} from "../tools/detector";
 import {Form, message, Modal} from "ant-design-vue";
 import {archiveDataInterface, panesInterface} from "../interface";
+import {QuestionOutlined} from '@ant-design/icons-vue';
 import {
   windowAddFile,
   windowIsDir,
@@ -45,7 +46,7 @@ const rulesRef = reactive({
     }
   ],
 });
-const {validate, validateInfos} = Form.useForm(formState, rulesRef, {});
+const {validate, validateInfos, resetFields} = Form.useForm(formState, rulesRef, {});
 const columns = [
   {
     name: 'Name',
@@ -68,7 +69,13 @@ const columns = [
 
 
 const dataRef = ref<archiveDataInterface[]>([]);
-const {addArchiveLocalDirData, loadArchiveLocalDirData, recoverArchiveLocalDirData, deleteArchiveLocalDirData, getArchiveLocalDirSavePath} = useArchiveLocalDirData();
+const {
+  addArchiveLocalDirData,
+  loadArchiveLocalDirData,
+  recoverArchiveLocalDirData,
+  deleteArchiveLocalDirData,
+  getArchiveLocalDirSavePath
+} = useArchiveLocalDirData();
 
 const loadData = () => {
   loadArchiveLocalDirData((status, data) => {
@@ -77,18 +84,43 @@ const loadData = () => {
     }
   })
 }
+
+const help = () => {
+  const instructions = [
+    "可以将某一个时刻的除temp标签外所有自建标签归档",
+    "归档成功后可以在此页面恢复、导出、删除",
+    "恢复需要编辑器内无自建标签归档",
+    "导出需要选择一个存储的文件夹",
+    "删除后无法恢复 ，请谨慎",
+    "浏览器环境无法保存文件至本地，故仅utools环境可归档",
+    "归档存储在本地，故无法使用utools的数据同步",
+    "存储路径为：我的文档/json_xxxxxx ，请勿修改其中数据",
+  ];
+
+  let content = h('div',
+      instructions.map(instruction => h('p', instruction))
+  );
+
+  Modal.info({
+    title: '使用说明',
+    wrapClassName: 'useDescContainer',
+    okText: '我已知晓',
+    maskClosable: true,
+    content: content,
+  });
+}
+
 const addArchive = () => {
   validate()
       .then(() => {
         const panesData = JSON.stringify(useGetPanesData());
         addArchiveLocalDirData(formState.name, panesData, (status) => {
           if (!status) {
-            Modal.error({
-              content: '保存异常',
-              maskClosable: true,
-            })
+            message.error('保存异常');
           } else {
+            resetFields()
             loadData();
+            message.success('保存成功');
           }
         })
       })
@@ -191,11 +223,15 @@ const exportArchive = (data: archiveDataInterface) => {
         <!--          <a-radio-button value="local">本地</a-radio-button>-->
         <!--        </a-radio-group>-->
         <!--      </a-form-item>-->
-        <a-form-item label="" v-bind="validateInfos.name" style="width: 220px;margin-left: 22px">
+        <a-form-item label="" v-bind="validateInfos.name" style="width: 200px;margin-left: 12px">
           <a-input v-model:value="formState.name" placeholder="请输入归档名"/>
         </a-form-item>
         <a-form-item>
           <a-button type="default" @click="addArchive">新建归档</a-button>
+        </a-form-item>
+        <a-form-item>
+          <a-button shape="circle" :icon="h(QuestionOutlined)" @click="help">
+          </a-button>
         </a-form-item>
       </a-form>
     </a-flex>
@@ -215,9 +251,10 @@ const exportArchive = (data: archiveDataInterface) => {
             <a-button type="link" size="small" @click="exportArchive(record)">导出</a-button>
 
             <a-popconfirm
-                title="确认删除归档?"
-                ok-text="Yes"
-                cancel-text="No"
+                title="删除后不可恢复，确认删除？"
+                ok-text="确认"
+                placement="left"
+                cancel-text="取消"
                 @confirm="deleteArchive(record.key)"
             >
               <a-button type="link" danger size="small">删除</a-button>
