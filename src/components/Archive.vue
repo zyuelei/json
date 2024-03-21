@@ -203,7 +203,7 @@ const exportArchive = (data: archiveDataInterface) => {
       <a-divider style="margin:4px" :plain="true"></a-divider>
     </a-flex>
     <a-flex flex="1" v-show="formState.layout=='local'"
-            style="overflow: scroll;height: 100%;">
+            style="overflow-y: auto;height: 100%;">
       <a-table :columns="columns" :show-header="false" :data-source="dataRef"
                :pagination="false">
         <template #bodyCell="{ column, record }">
