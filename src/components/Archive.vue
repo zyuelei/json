@@ -4,7 +4,6 @@ import {h, onMounted, reactive, ref} from 'vue';
 import {useArchiveLocalDirData, useGetPanesData, useSetConfigDetector, useSetPanesData} from "../tools/detector";
 import {Form, message, Modal} from "ant-design-vue";
 import {archiveDataInterface, panesInterface} from "../interface";
-import {QuestionOutlined} from '@ant-design/icons-vue';
 import {
   getPathSep,
   windowAddFile,
@@ -18,6 +17,9 @@ import {
 } from "../tools/windowTool.ts";
 
 import type {Rule} from 'ant-design-vue/es/form';
+import {ClearOutlined, FileZipOutlined} from '@ant-design/icons-vue';
+
+const emit = defineEmits(['deleteAllTab']);
 
 interface FormState {
   layout: 'local' | 'online';
@@ -88,33 +90,8 @@ const loadData = () => {
   })
 }
 
-const help = () => {
-  const instructions = [
-    "可以将某一个时刻的所有自建标签(除temp标签)归档",
-    "归档成功后可以在此页面恢复、导出、删除",
-    "恢复需要编辑器内无自建标签归档",
-    "导出需要选择一个存储的父级文件夹",
-    "在'基础设置-导出归档至'，中可以设置默认的存储父级文件夹",
-    "删除后无法恢复 ，请谨慎",
-    "浏览器环境无法保存文件至本地，故仅utools环境可归档",
-    "归档存储在本地，故无法使用utools的数据同步",
-    "存储路径为：我的文档/json_xxxxxx ，请勿修改其中数据",
-  ];
 
-  let content = h('div',
-      instructions.map(instruction => h('p', instruction))
-  );
-
-  Modal.info({
-    title: '使用说明',
-    wrapClassName: 'useDescContainer',
-    okText: '我已知晓',
-    maskClosable: true,
-    content: content,
-  });
-}
-
-const addArchive = () => {
+const addArchive = (clear?: boolean) => {
   validate()
       .then(() => {
         const panesData = JSON.stringify(useGetPanesData());
@@ -124,6 +101,9 @@ const addArchive = () => {
           } else {
             resetFields()
             loadData();
+            if (clear) {
+              emit('deleteAllTab');
+            }
             message.success('保存成功');
           }
         })
@@ -149,13 +129,26 @@ const validData = (status: boolean, data: panesInterface[]) => {
     return v;
   });
 }
-const recoverArchive = (key: string) => {
+const recoverArchive = (key: string, sureRecover: boolean) => {
+
+  const pan = useGetPanesData();
+  if ((pan.length > 1 || pan[0].key != 0) && !sureRecover) {
+    Modal.confirm({
+      title: '标签栏已有数据',
+      okText: '确认',
+      cancelText: '取消',
+      content: '相同标识的数据将会跳过，并非覆盖，确认恢复嘛？',
+      maskClosable: true,
+      onOk: () => {
+        recoverArchive(key, true)
+      },
+      onCancel() {
+      }
+    })
+    return;
+  }
+
   recoverArchiveLocalDirData(key, (status, value) => {
-    const pan = useGetPanesData();
-    if (pan.length > 1 || pan[0].key != 0) {
-      message.error('标签栏已有数据无法恢复');
-      return;
-    }
     const result = validData(status, value);
     if (!result) {
       return;
@@ -232,15 +225,29 @@ const exportArchive = (data: archiveDataInterface) => {
         <!--          <a-radio-button value="local">本地</a-radio-button>-->
         <!--        </a-radio-group>-->
         <!--      </a-form-item>-->
-        <a-form-item label="" v-bind="validateInfos.name" style="width: 216px;margin-left: 12px">
+        <a-form-item label="" v-bind="validateInfos.name" style="width: 250px;margin-left: 12px">
           <a-input v-model:value="formState.name" placeholder="请输入归档名"/>
         </a-form-item>
+        <!--        <a-form-item extra="关闭全部tab" label="">-->
+        <!--          <a-checkbox></a-checkbox>-->
+        <!--        </a-form-item>-->
         <a-form-item>
-          <a-button type="default" @click="addArchive">新建归档</a-button>
+          <a-tooltip placement="left">
+            <template #title>
+              <span>仅新建归档</span>
+            </template>
+            <a-button type="default" :icon="h(FileZipOutlined)" @click="addArchive(false)"></a-button>
+          </a-tooltip>
+
         </a-form-item>
         <a-form-item>
-          <a-button shape="circle" size="small" :icon="h(QuestionOutlined)" @click="help">
-          </a-button>
+          <a-tooltip placement="left">
+            <template #title>
+              <span>新建归档并强制关闭所有标签</span>
+            </template>
+            <a-button aria-label="清空并归档" type="default" :icon="h(ClearOutlined)"
+                      @click="addArchive(true)"></a-button>
+          </a-tooltip>
         </a-form-item>
       </a-form>
     </a-flex>
@@ -256,7 +263,7 @@ const exportArchive = (data: archiveDataInterface) => {
             {{ record.name }}
           </template>
           <template v-else-if="column.key === 'action'">
-            <a-button type="link" size="small" @click="recoverArchive(record.key)">恢复</a-button>
+            <a-button type="link" size="small" @click="recoverArchive(record.key, false)">恢复</a-button>
             <a-button type="link" size="small" @click="exportArchive(record)">导出</a-button>
 
             <a-popconfirm

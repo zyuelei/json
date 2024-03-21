@@ -13,7 +13,14 @@ import {
   supportAutoType,
   supportEditTemplateType
 } from "../interface";
-import {DownOutlined, EditOutlined, LockOutlined, SettingOutlined, UnlockOutlined} from '@ant-design/icons-vue';
+import {
+  DownOutlined,
+  EditOutlined,
+  LockOutlined,
+  QuestionOutlined,
+  SettingOutlined,
+  UnlockOutlined
+} from '@ant-design/icons-vue';
 import {Input, message, Modal} from 'ant-design-vue';
 import {
   base64Decode,
@@ -48,6 +55,7 @@ const props = defineProps(['theme'])
 const {getConfig} = useSetConfigDetector({})
 
 const activeKey = ref(0);
+const settingTabActiveKey = ref("1");
 const {
   panesData,
   activeIndex,
@@ -967,11 +975,60 @@ function renameShowModel() {
   };
   destroy()
   renameModal = Modal.info({
-    title: '修改tab名',
+    title: '修改标签名',
     content: h(inputComponent),
     maskClosable: true,
     onOk: done,
     onCancel: contentRefSetFocus
+  });
+}
+
+
+const help = () => {
+  let instructions;
+  let lineHeight = '1.4';
+  if (settingTabActiveKey.value == '1') {
+    instructions = [
+      "可以将某一个时刻的所有自建标签(除temp标签)归档",
+      "归档成功后可以在此页面恢复、导出、删除",
+      "恢复需要编辑器内无自建标签归档",
+      "导出需要选择一个存储的父级文件夹",
+      "在'基础设置-导出归档至'，中可以设置默认的存储父级文件夹",
+      "删除后无法恢复 ，请谨慎",
+      "浏览器环境无法保存文件至本地，故仅utools环境可归档",
+      "归档存储在本地，故无法使用utools的数据同步",
+      "存储路径为：我的文档/json_xxxxxx ，请勿修改其中数据",
+    ];
+    lineHeight = '1'
+  } else {
+    instructions = [
+      "默认行为：粘贴自动格式化json，支持unicode字符(如：\\x22、\\u0031)的转码自动格式化 快捷键：ctrl + v",
+      "格式化：在【选中处/全局】一些需要二次格式化的时候(如：[get]后)可手动调用 快捷键：ctrl + center / alt + enter",
+      "锁定/解锁：锁定后需要通过 解锁/强制关闭全部 才可以关闭当前标签",
+      "get：在【光标处/全局】解析get参数，并尝试转json，如：a=1&b=2",
+      "timestamp：在【光标处/全局】进行【10(13)位时间戳/y-m-d H:i:s(.ms)】格式的转换,若无法转换则会插入当前时间的10位时间戳",
+      "url/base64/serialize/utf8：在【光标处/全局】进行url_decode/base64_decode/unserialize/utf8解码，并尝试转json",
+      "复制form：在【选中处/全局】复制key:value格式的json数据，用于postman等软件的导入",
+      "复制压缩：在【选中处/全局】复制去除回车、空格后的压缩数据",
+      "仅粘贴：在【选中处/全局】粘贴，并不做格式化操作",
+      "注释：【全局】指当前标签内所有内容；【光标处】指被光标在双引号包裹的单行字符串中；【选中处】指光标选中的内容",
+    ];
+  }
+
+  let content = h('div',
+      instructions.map(instruction => h('p', {
+        style: {
+          lineHeight// 调整行高为1.5
+        }
+      }, instruction))
+  );
+
+  Modal.info({
+    title: '使用说明',
+    wrapClassName: 'useDescContainer',
+    okText: '我已知晓',
+    maskClosable: true,
+    content: content,
   });
 }
 </script>
@@ -1043,7 +1100,7 @@ function renameShowModel() {
           <a-button class="operateBtn" @click="onBase64Decode">{{ showAltAlert ? '3' : '' }} base64</a-button>
           <a-button class="operateBtn" @click="onUnserializeDecode">{{ showAltAlert ? '4' : '' }} serialize</a-button>
           <a-button class="operateBtn" @click="onTimestampDecode">{{ showAltAlert ? '5' : '' }} timestamp</a-button>
-          <a-button class="operateBtn" @click="onUnicodeDecode">{{ showAltAlert ? '6' : '' }} unicode</a-button>
+          <a-button class="operateBtnSmall" @click="onUnicodeDecode">{{ showAltAlert ? '6' : '' }} utf8</a-button>
           <a-button class="operateBtn" @click="formDataCopy">{{ showAltAlert ? '8' : '' }} 复制form</a-button>
           <a-button class="operateBtn" @click="archiveCopy">{{ showAltAlert ? '9' : '' }} 复制压缩</a-button>
           <a-button class="operateBtnSmall" @click="pasteOnly">{{ showAltAlert ? '0' : '' }} 仅粘贴</a-button>
@@ -1059,13 +1116,18 @@ function renameShowModel() {
           :body-style="{paddingTop: '2px', height: '100%'}"
           placement="right"
       >
-        <a-tabs centered style="height: 100%">
+        <a-tabs centered style="height: 100%" v-model:activeKey="settingTabActiveKey">
           <a-tab-pane style="height:100%;padding-top:8px;" key="1" tab="归档管理">
-            <Archive></Archive>
+            <Archive @deleteAllTab="tabOperate('forceCloseAll')"></Archive>
           </a-tab-pane>
-          <a-tab-pane style="margin-top:8px;" key="2" tab="基础设置">
+          <a-tab-pane style="padding-top:8px;" key="2" tab="基础设置">
             <Setting></Setting>
           </a-tab-pane>
+
+          <template #rightExtra>
+            <a-button style="position: absolute;right: 10px;top: 6px" shape="circle" size="small"
+                      :icon="h(QuestionOutlined)" @click="help"></a-button>
+          </template>
         </a-tabs>
       </a-drawer>
     </div>
