@@ -16,6 +16,11 @@ export function windowIsMac(): boolean {
     return window.isMacOS && window.isMacOS()
 }
 
+export function windowIsWindows(): boolean {
+    // @ts-ignore
+    return window.isWindows && window.isWindows()
+}
+
 export function windowPluginEnter(callback: (param: { payload: string, type: string, code: string }) => void) {
     // @ts-ignore
     window.onPluginEnter && window.onPluginEnter(({payload, type, code}: any) => {
@@ -103,6 +108,19 @@ export function windowIsDir(path: string, callback?: (status: boolean) => void) 
 export function windowShowOpenDialog(): string {
     // @ts-ignore
     return window.showOpenDialog && window.showOpenDialog()
+}
+
+export function windowOpenDir(path: string, callback?: (status: boolean) => void): string {
+    // @ts-ignore
+    return window.openDir && window.openDir(path, callback)
+}
+
+export function getPathSep() {
+    if (windowIsWindows()) {
+        return "\\"
+    } else {
+        return '/'
+    }
 }
 
 export function windowReplace(str: string) {

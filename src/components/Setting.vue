@@ -2,10 +2,12 @@
 
 import {useSetConfigDetector} from "../tools/detector";
 import {supportAutoType, supportEditTemplateType, systemConfigInterface} from "../interface";
+import {windowIsDir, windowShowOpenDialog} from "../tools/windowTool.ts";
+import {message} from "ant-design-vue";
 
 const labelCol = {span: 6};
 const wrapperCol = {span: 16};
-const {getConfig, setConfig} = useSetConfigDetector({})
+const {getConfig, setConfig, getNativeConfig, setNativeConfig} = useSetConfigDetector({})
 
 const setConfigLocal = <T extends keyof systemConfigInterface>(key: T, value: systemConfigInterface[T]) => {
   switch (key) {
@@ -34,7 +36,21 @@ const setAutoFormat = (key: supportAutoType) => {
   setConfig('autoFormat', configAutoFormat)
 }
 
-
+const chooseRecoverDir = () => {
+  const choosePathArr = windowShowOpenDialog();
+  if (!choosePathArr || choosePathArr.length != 1) {
+    message.error('选择文件夹失败');
+    return;
+  }
+  const choosePath = choosePathArr[0]
+  windowIsDir(choosePath, (status) => {
+    if (!status) {
+      message.error('选择的不是一个文件夹');
+      return;
+    }
+    setNativeConfig('recoverDir', choosePath)
+  })
+}
 // const instructions = [
 //   "默认行为：粘贴自动格式化json，支持unicode字符(如：\\x22、\\u0031)的转码自动格式化 快捷键：ctrl + v",
 //   "格式化：在【选中处/全局】一些需要二次格式化的时候(如：[get]后)可手动调用 快捷键：ctrl + center / alt + enter",
@@ -98,6 +114,16 @@ const setAutoFormat = (key: supportAutoType) => {
           <a-radio type="number" :value="supportEditTemplateType.monaco">monaco</a-radio>
           <a-radio type="number" :value="supportEditTemplateType.brace">brace</a-radio>
         </a-radio-group>
+      </a-form-item>
+
+      <a-form-item
+          tooltip="设置后在导出归档时无需选择导出文件的父级目录。仅utools环境生效"
+          label="导出归档至">
+        <a-input-group compact>
+          <a-input readonly :value="getNativeConfig('recoverDir')" style="width: calc(100% - 102px)"/>
+          <a-button type="primary" @click="chooseRecoverDir">选择</a-button>
+          <a-button type="default" @click="setNativeConfig('recoverDir', '')">清除</a-button>
+        </a-input-group>
       </a-form-item>
 
       <a-row :gutter="0">

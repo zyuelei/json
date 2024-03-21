@@ -1,5 +1,6 @@
 // 创建文件夹
 import {
+    getPathSep,
     windowAddFile,
     windowGetNativeId,
     windowGetPath,
@@ -24,9 +25,11 @@ function init() {
     if (!nativeID || !useDataPath) {
         return false;
     }
+
+    const pathSep = getPathSep();
     globalNativeId = nativeID
-    globalUseDataPath = useDataPath + '/'
-    globalSavePath = globalUseDataPath + 'json_' + nativeID + '/';
+    globalUseDataPath = useDataPath + pathSep
+    globalSavePath = globalUseDataPath + 'json_' + nativeID + pathSep;
     // 创建文件夹
     windowMkdir(globalSavePath, (status) => {
         if (!status) {

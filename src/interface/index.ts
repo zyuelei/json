@@ -29,6 +29,10 @@ export interface systemConfigInterface {
     saveData: boolean,
 }
 
+export interface nativeConfigInterface {
+    recoverDir: string
+}
+
 export interface configListenerInterface {
     <T extends keyof systemConfigInterface>(key: T, value: systemConfigInterface[T]): void
 }

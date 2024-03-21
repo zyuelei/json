@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import type {UnwrapRef} from 'vue';
 import {h, onMounted, reactive, ref} from 'vue';
-import {useArchiveLocalDirData, useGetPanesData, useSetPanesData} from "../tools/detector";
+import {useArchiveLocalDirData, useGetPanesData, useSetConfigDetector, useSetPanesData} from "../tools/detector";
 import {Form, message, Modal} from "ant-design-vue";
 import {archiveDataInterface, panesInterface} from "../interface";
 import {QuestionOutlined} from '@ant-design/icons-vue';
 import {
+  getPathSep,
   windowAddFile,
   windowIsDir,
   windowMkdir,
+  windowOpenDir,
   windowReadFile,
   windowReplace,
   windowShowOpenDialog,
@@ -22,6 +24,7 @@ interface FormState {
   name: string;
 }
 
+const {getNativeConfig} = useSetConfigDetector({})
 const formState: UnwrapRef<FormState> = reactive({
   layout: 'local',
   name: ''
@@ -87,10 +90,11 @@ const loadData = () => {
 
 const help = () => {
   const instructions = [
-    "可以将某一个时刻的除temp标签外所有自建标签归档",
+    "可以将某一个时刻的所有自建标签(除temp标签)归档",
     "归档成功后可以在此页面恢复、导出、删除",
     "恢复需要编辑器内无自建标签归档",
-    "导出需要选择一个存储的文件夹",
+    "导出需要选择一个存储的父级文件夹",
+    "在'基础设置-导出归档至'，中可以设置默认的存储父级文件夹",
     "删除后无法恢复 ，请谨慎",
     "浏览器环境无法保存文件至本地，故仅utools环境可归档",
     "归档存储在本地，故无法使用utools的数据同步",
@@ -175,12 +179,15 @@ onMounted(() => {
   loadData();
 })
 const exportArchive = (data: archiveDataInterface) => {
-  const choosePathArr = windowShowOpenDialog();
-  if (!choosePathArr || choosePathArr.length != 1) {
-    message.error('选择文件夹失败');
-    return;
+  let choosePath = getNativeConfig('recoverDir');
+  if (!choosePath) {
+    const choosePathArr = windowShowOpenDialog();
+    if (!choosePathArr || choosePathArr.length != 1) {
+      message.error('选择文件夹失败');
+      return;
+    }
+    choosePath = choosePathArr[0]
   }
-  const choosePath = choosePathArr[0]
   windowIsDir(choosePath, (status) => {
     if (!status) {
       message.error('选择的不是一个文件夹');
@@ -193,7 +200,8 @@ const exportArchive = (data: archiveDataInterface) => {
       if (!result) {
         return;
       }
-      const savePath = choosePath + '/' + data.time + '_' + windowReplace(data.name) + '/';
+      const pathSep = getPathSep();
+      const savePath = choosePath + pathSep + data.time + '_' + windowReplace(data.name) + pathSep;
       windowMkdir(savePath, (status) => {
         if (!status) {
           message.error('创建保存文件夹失败');
@@ -206,6 +214,7 @@ const exportArchive = (data: archiveDataInterface) => {
           const fileName = v.key + '_' + windowReplace(v.title) + '.json';
           windowAddFile(savePath + fileName, v.content)
         })
+        windowOpenDir(savePath)
       })
     })
   })
@@ -223,14 +232,14 @@ const exportArchive = (data: archiveDataInterface) => {
         <!--          <a-radio-button value="local">本地</a-radio-button>-->
         <!--        </a-radio-group>-->
         <!--      </a-form-item>-->
-        <a-form-item label="" v-bind="validateInfos.name" style="width: 200px;margin-left: 12px">
+        <a-form-item label="" v-bind="validateInfos.name" style="width: 216px;margin-left: 12px">
           <a-input v-model:value="formState.name" placeholder="请输入归档名"/>
         </a-form-item>
         <a-form-item>
           <a-button type="default" @click="addArchive">新建归档</a-button>
         </a-form-item>
         <a-form-item>
-          <a-button shape="circle" :icon="h(QuestionOutlined)" @click="help">
+          <a-button shape="circle" size="small" :icon="h(QuestionOutlined)" @click="help">
           </a-button>
         </a-form-item>
       </a-form>

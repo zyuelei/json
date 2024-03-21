@@ -62,6 +62,14 @@ window.isMacOS = () => {
     })
 }
 
+window.isWindows = () => {
+    return toolsFun(() => {
+        return utools.isWindows()
+    }, () => {
+        return getOperatingSystem() === 'Windows'
+    })
+}
+
 window.setContent = (key, value) => {
     return toolsFun(() => {
         utools.dbStorage.setItem(key, value)
@@ -239,5 +247,28 @@ window.showOpenDialog = function () {
         }, () => {
             return ''
         })
+    })
+}
+
+window.openDir = function (path, callback) {
+    toolsFun(() => {
+        const {exec} = require('child_process');
+        let command;
+        if (isWindows()) {
+            command = `start explorer ${path}`;
+        } else if (isMacOS()) {
+            command = `open ${path}`;
+        } else {
+            command = `xdg-open ${path}`;
+        }
+        exec(command, (error) => {
+            if (error) {
+                callback && callback(false)
+                return;
+            }
+            callback && callback(true)
+        });
+    }, () => {
+        callback && callback(false)
     })
 }

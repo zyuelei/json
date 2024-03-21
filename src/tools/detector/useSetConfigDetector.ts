@@ -1,11 +1,12 @@
 import {reactive, toRaw} from "vue";
 import {
     configListenerInterface,
+    nativeConfigInterface,
     supportAutoType,
     supportEditTemplateType,
     systemConfigInterface
 } from "../../interface";
-import {windowGetContent, windowSetContent} from "../windowTool.ts";
+import {windowGetContent, windowGetNativeId, windowSetContent} from "../windowTool.ts";
 
 interface useSetConfigDetectorParam {
     onConfigChange?: configListenerInterface;
@@ -26,6 +27,19 @@ const config: systemConfigInterface = systemConfig ? systemConfig : {
 const contentConfig = reactive<systemConfigInterface>(config)
 const callbackList: configListenerInterface[] = [];
 
+let nativeConfig: any;
+let nativeKey = ''
+
+function initNativeConfig() {
+    nativeKey = 'config_native/' + windowGetNativeId();
+    const windowNativeConfig = windowGetContent(nativeKey);
+    const loadNativeConfig: nativeConfigInterface = windowNativeConfig ? windowNativeConfig : {
+        recoverDir: ''
+    }
+    nativeConfig = reactive<nativeConfigInterface>(loadNativeConfig)
+}
+
+setTimeout(initNativeConfig, 200)
 // 取消注册观察者
 const unConfigChange = (observer: configListenerInterface) => {
     const index = callbackList.indexOf(observer);
@@ -58,5 +72,14 @@ export function useSetConfigDetector({
     //     deep: true
     // });
 
-    return {getConfig, setConfig, unConfigChange};
+    const getNativeConfig = <T extends keyof nativeConfigInterface>(key: T): nativeConfigInterface[T] => {
+        return nativeConfig[key]
+    }
+
+    const setNativeConfig = <T extends keyof nativeConfigInterface>(key: T, value: nativeConfigInterface[T]) => {
+        nativeConfig[key] = value;
+        windowSetContent(nativeKey, toRaw(nativeConfig))
+    }
+
+    return {getConfig, setConfig, unConfigChange, getNativeConfig, setNativeConfig};
 }
