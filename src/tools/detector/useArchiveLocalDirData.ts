@@ -80,16 +80,23 @@ export function useArchiveLocalDirData() {
             let result: archiveDataInterface[] = [];
             value.map((value) => {
                 const p = value.split('_', 2)
-                const time = parseInt(p[0])
-                const formatTime = formatDate(time)
-                const name = p[1].replace(/\.json$/, '')
-                result.push({
-                    key: value,
-                    time: time,
-                    formatTime: formatTime,
-                    name: name,
-                    type: 'local'
-                })
+                try {
+                    const time = parseInt(p[0])
+                    const formatTime = formatDate(time)
+                    const name = p[1].replace(/\.json$/, '')
+                    if (p.length != 2 || p[0] !== '' + time || name.length + 5 != p[1].length) {
+                        return
+                    }
+                    result.push({
+                        key: value,
+                        time: time,
+                        formatTime: formatTime,
+                        name: name,
+                        type: 'local'
+                    })
+                } catch (e) {
+
+                }
             })
             result.sort((o, n) => {
                 return n.time - o.time

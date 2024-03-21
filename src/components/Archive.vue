@@ -63,7 +63,7 @@ const columns = [
     name: 'Time',
     dataIndex: 'formatTime',
     key: 'time',
-    width: 70,
+    width: 78,
   },
   {
     title: 'Action',
