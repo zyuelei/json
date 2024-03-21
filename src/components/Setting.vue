@@ -91,7 +91,7 @@ const chooseRecoverDir = () => {
 <template>
   <div>
     <a-form :label-col="labelCol" :wrapper-col="wrapperCol">
-      <a-form-item tooltip="只会改变编辑器内的文字大小。建议值：12" label="字体大小">
+      <a-form-item tooltip="只会改变编辑器内的文字大小。建议值：14" label="字体大小">
         <a-input-number :defaultValue="getConfig('fontSize')" style="width: 100%"
                         @change="setConfigLocal('fontSize', $event)" :min="1" :max="50"/>
       </a-form-item>
