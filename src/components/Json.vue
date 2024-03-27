@@ -822,7 +822,7 @@ const listenCodeShortcutKey = (e: KeyboardEvent) => {
     case 'alt':
       break;
     case 'tab':
-      setActiveKey(calcNextKey(e.shiftKey))
+      setActiveKey(calcNextKey(!e.shiftKey))
       break;
     case 'w':
     case 'q':
