@@ -691,6 +691,7 @@ const addTab = () => {
 const removeTab = (targetKeyStr: string) => {
   const targetKey = parseInt(targetKeyStr)
   deleteData(targetKey)
+  initData();
 }
 
 const onEdit = (targetKey: string | MouseEvent, action: string) => {
@@ -710,13 +711,16 @@ const onChange = ({content, format}: any) => {
   }
 }
 
-const setActiveKey = (value: number) => {
-  activeKey.value = value;
+const initData = () => {
   if (activeData.value.init == false) {
     contentRefSetVal(activeData.value.content)
     handleResize()
     activeData.value.init = true
   }
+}
+const setActiveKey = (value: number) => {
+  activeKey.value = value;
+  initData();
   contentRefSetFocus(50);
 };
 
