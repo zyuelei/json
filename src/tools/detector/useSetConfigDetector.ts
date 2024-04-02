@@ -20,9 +20,10 @@ const config: systemConfigInterface = systemConfig ? systemConfig : {
     useWrap: false,
     autoFormat: [supportAutoType.extractJson, supportAutoType.archive],
     render: supportEditTemplateType.monaco, // brace  moncaco
-    defaultNewTab: false,
+    defaultNewTab: true,
     doubleShiftKeyDown: false,
-    saveData: false,
+    saveData: true,
+    stickyEnable: false,
 };
 const contentConfig = reactive<systemConfigInterface>(config)
 const callbackList: configListenerInterface[] = [];

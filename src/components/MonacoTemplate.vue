@@ -40,12 +40,17 @@ const afterInit = () => {
   if (!editorInit.value) {
     return
   }
-  let newConfig: any = {}
+  let newConfig: any = {
+    stickyScroll: {
+      enabled: false
+    }
+  }
   typeof getConfig('fontSize') == 'number' ? newConfig.fontSize = getConfig('fontSize') : '' // 设置文字大小
   typeof getConfig('useWrap') == 'boolean' ? (newConfig.wordWrap = getConfig('useWrap') ? 'on' : 'off') : '' // 是否换行
   typeof getConfig('tabSize') == 'number' ? (newConfig.tabSize = getConfig('tabSize')) : '' // 制表符长度
   // typeof getConfig('printMargin') == 'boolean' && editor.setShowPrintMargin(getConfig('printMargin')) // 打印边距可见
   getConfig('theme') == 'dark' ? monaco.editor.setTheme('vs-dark') : monaco.editor.setTheme('vs') // 设置主题
+  newConfig.stickyScroll.enabled = getConfig('stickyEnable')
   editor.updateOptions(newConfig);
 }
 const {getConfig, unConfigChange} = useSetConfigDetector({

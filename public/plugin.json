@@ -47,9 +47,9 @@
       "code": "json_format",
       "explain": "json格式化",
       "cmds": [
-        "_zhuanyijson",
         "json",
         "JSON",
+        "_zhuanyijson",
         {
           "type": "regex",
           "label": "json",

@@ -126,6 +126,26 @@ const chooseRecoverDir = () => {
         </a-input-group>
       </a-form-item>
 
+      <!--      <a-row :gutter="0">-->
+      <!--        <a-col :span="12">-->
+      <!--          <a-form-item tooltip="只会改变编辑器内的文字大小。建议值：14" label="字体大小"-->
+      <!--                       :label-col="{ span: 12, offset: 0}"-->
+      <!--                       :wrapper-col="{ span: 0, offset: 0}">-->
+      <!--            <a-input-number :defaultValue="getConfig('fontSize')" style="width: 100%"-->
+      <!--                            @change="setConfigLocal('fontSize', $event)" :min="1" :max="50"/>-->
+      <!--          </a-form-item>-->
+      <!--        </a-col>-->
+      <!--        <a-col :span="12">-->
+      <!--          <a-form-item tooltip="修改后需要重新格式化一下(ctrl + enter)才会生效。或者新打开一个标签试试。建议值：4"-->
+      <!--                       label="缩进宽度"-->
+      <!--                       :label-col="{ span: 12, offset: 0}"-->
+      <!--                       :wrapper-col="{ span: 0, offset: 0}">-->
+      <!--            <a-input-number :defaultValue="getConfig('tabSize')" style="width: 100%"-->
+      <!--                            @change="setConfigLocal('tabSize', $event)" :min="1" :max="20"/>-->
+      <!--          </a-form-item>-->
+      <!--        </a-col>-->
+      <!--      </a-row>-->
+
       <a-row :gutter="0">
         <a-col :span="24">
           以下按需开启
@@ -133,14 +153,17 @@ const chooseRecoverDir = () => {
         <a-col :span="12">
           <a-form-item tooltip="对 xxx { } xxx 这种前后有非json的字符串很有效" label="自动提取"
                        :label-col="{ span: 12, offset: 0}"
-                       :wrapper-col="{ span: 0, offset: 0}">
+                       :wrapper-col="{ span: 0, offset: 0}"
+                       class="noBottom"
+          >
             <a-checkbox :checked="getConfig('autoFormat').includes(supportAutoType.extractJson)"
                         @change="setAutoFormat(supportAutoType.extractJson)"/>
           </a-form-item>
         </a-col>
         <a-col :span="12">
           <a-form-item tooltip="对某些聊天软件复制出来的字符串有用" label="移除nbsp" :label-col="{ span: 12, offset: 0}"
-                       :wrapper-col="{ span: 0, offset: 0}">
+                       :wrapper-col="{ span: 0, offset: 0}"
+                       class="noBottom">
             <a-checkbox :checked="getConfig('autoFormat').includes(supportAutoType.archive)"
                         @change="setAutoFormat(supportAutoType.archive)"/>
           </a-form-item>
@@ -148,28 +171,41 @@ const chooseRecoverDir = () => {
         <a-col :span="12">
           <a-form-item
               tooltip="将自建标签(除了temp标签)的数据保存到缓存中，可以在下次打开本插件时恢复数据。注：在utools环境中，会员可以跨设备同步该缓存"
-              label="保存数据" :label-col="{ span: 12, offset: 0}" :wrapper-col="{ span: 0, offset: 0}">
+              label="保存数据" :label-col="{ span: 12, offset: 0}" :wrapper-col="{ span: 0, offset: 0}"
+              class="noBottom">
             <a-checkbox :checked="getConfig('saveData')"
                         @change="setConfigLocal('saveData',$event.target.checked)"/>
           </a-form-item>
         </a-col>
         <a-col :span="12">
-          <a-form-item tooltip="双击shift可以重命名标签，即使关闭也可以用编辑器左下角的操作按钮重命名标签"
-                       label="快捷重命名" :label-col="{ span: 12, offset: 0}" :wrapper-col="{ span: 0, offset: 0}">
-            <a-checkbox :checked="getConfig('doubleShiftKeyDown')"
-                        @change="setConfigLocal('doubleShiftKeyDown',$event.target.checked)"/>
+          <a-form-item tooltip="滚动内容时，顶部显示固定的范围起始位置。仅monaco编辑器生效" label="粘性预览"
+                       :label-col="{ span: 12, offset: 0}"
+                       :wrapper-col="{ span: 0, offset: 0}"
+                       class="noBottom">
+            <a-checkbox :checked="getConfig('stickyEnable')"
+                        @change="setConfigLocal('stickyEnable',$event.target.checked)"/>
           </a-form-item>
         </a-col>
         <a-col :span="12">
           <a-form-item tooltip="utools环境生效，从utool入口输入数据进入本插件，会自动新建一个标签" label="载入新标签"
-                       :label-col="{ span: 12, offset: 0}" :wrapper-col="{ span: 0, offset: 0}">
+                       :label-col="{ span: 12, offset: 0}" :wrapper-col="{ span: 0, offset: 0}"
+                       class="noBottom">
             <a-checkbox :checked="getConfig('defaultNewTab')"
                         @change="setConfigLocal('defaultNewTab',$event.target.checked)"/>
           </a-form-item>
         </a-col>
         <a-col :span="12">
+          <a-form-item tooltip="双击shift可以重命名标签，即使关闭也可以用编辑器左下角的操作按钮重命名标签"
+                       label="快捷重命名" :label-col="{ span: 12, offset: 0}" :wrapper-col="{ span: 0, offset: 0}"
+                       class="noBottom">
+            <a-checkbox :checked="getConfig('doubleShiftKeyDown')"
+                        @change="setConfigLocal('doubleShiftKeyDown',$event.target.checked)"/>
+          </a-form-item>
+        </a-col>
+        <a-col :span="12">
           <a-form-item tooltip="编辑器内的数据过长时是否折行" label="折行" :label-col="{ span: 12, offset: 0}"
-                       :wrapper-col="{ span: 0, offset: 0}">
+                       :wrapper-col="{ span: 0, offset: 0}"
+                       class="noBottom">
             <a-checkbox :checked="getConfig('useWrap')"
                         @change="setConfigLocal('useWrap',$event.target.checked)"/>
           </a-form-item>
@@ -179,14 +215,16 @@ const chooseRecoverDir = () => {
         </a-col>
         <a-col :span="12">
           <a-form-item tooltip="尝试在格式化的时候解析 a=1&b=2 这种数据，由于数据多样性，可能导致一些莫名的解析结果"
-                       label="自动get" :label-col="{ span: 12, offset: 0}" :wrapper-col="{ span: 0, offset: 0}">
+                       label="自动get" :label-col="{ span: 12, offset: 0}" :wrapper-col="{ span: 0, offset: 0}"
+                       class="noBottom">
             <a-checkbox :checked="getConfig('autoFormat').includes(supportAutoType.get_param)"
                         @change="setAutoFormat(supportAutoType.get_param)"/>
           </a-form-item>
         </a-col>
         <a-col :span="12">
           <a-form-item tooltip="尝试使用utf8对数据进行解码, 如 \x22 \u0031，由于数据多样性，可能导致一些莫名的解析结果"
-                       label="强制utf8" :label-col="{ span: 12, offset: 0}" :wrapper-col="{ span: 0, offset: 0}">
+                       label="强制utf8" :label-col="{ span: 12, offset: 0}" :wrapper-col="{ span: 0, offset: 0}"
+                       class="noBottom">
             <a-checkbox :checked="getConfig('autoFormat').includes(supportAutoType.unicode)"
                         @change="setAutoFormat(supportAutoType.unicode)"/>
           </a-form-item>
@@ -197,5 +235,7 @@ const chooseRecoverDir = () => {
 </template>
 
 <style scoped>
-
+.noBottom {
+  margin-bottom: 0;
+}
 </style>

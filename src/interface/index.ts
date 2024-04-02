@@ -27,6 +27,7 @@ export interface systemConfigInterface {
     defaultNewTab: boolean,
     doubleShiftKeyDown: boolean,
     saveData: boolean,
+    stickyEnable: boolean
 }
 
 export interface nativeConfigInterface {
