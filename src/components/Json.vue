@@ -1016,29 +1016,51 @@ const onCopyHandler = (clickInfo: any) => {
 }
 const onRemoveEscape = (clickInfo: any) => {
   switch (clickInfo.key) {
-    case 'multi':
+    case 'select':
+      removerEscape(ContentSelectType.select)
+      break;
+    case 'point':
+      removerEscape(ContentSelectType.line_quotes)
+      break;
+    case 'jsonAndMulti':
       format('', {formatOrder: [supportAutoType.multiEscape]})
       break;
-    case 'multiAndPoint':
-      let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
-      const parseText = selectInfo.matchText;
-      if (!parseText) {
-        contentRefSetFocus()
-        return
-      }
-
-      try {
-        const newData = parseText.replace(/\\\\/g, "\\").replace(/\\"/g, '"')
-        if (newData == parseText) {
-          contentRefSetFocus()
-          return
-        }
-        replaceNewContent(contentInfo, selectInfo, newData)
-      } catch (e) {
-      }
-      contentRefSetFocus()
-      break;
   }
+}
+
+const removerEscape = (type: ContentSelectType) => {
+  let {contentInfo, selectInfo} = getContentCursorOrAll(type);
+  const parseText = selectInfo.matchText;
+  if (!parseText) {
+    contentRefSetFocus()
+    return
+  }
+
+  try {
+    const newData = parseText.replace(/\\\\/g, "\\").replace(/\\"/g, '"')
+    if (newData == parseText) {
+      contentRefSetFocus()
+      return
+    }
+    if (type === ContentSelectType.select) {
+      selectInfo.newContent = (str) => {
+        const jsonStr = isJson(str);
+        if (jsonStr) {
+          return {
+            isJson: true,
+            text: jsonStr
+          }
+        }
+        return {
+          isJson: false,
+          text: '' + str + ''
+        }
+      }
+    }
+    replaceNewContent(contentInfo, selectInfo, newData)
+  } catch (e) {
+  }
+  contentRefSetFocus()
 }
 
 
@@ -1063,14 +1085,15 @@ const help = () => {
     instructions = [
       "默认行为：粘贴自动格式化json，支持unicode字符(如：\\x22、\\u0031)的转码自动格式化 快捷键：ctrl + v",
       "格式化：在【选中处/全局】一些需要二次格式化的时候(如：[get]后)可手动调用 快捷键：ctrl + center / alt + enter",
-      "锁定/解锁：锁定后需要通过 解锁/强制关闭全部 才可以关闭当前标签",
+      "锁定/解锁：锁定后需要通过 解锁/强制关闭全部 才可关闭当前标签",
       "get：在【光标处/全局】解析get参数，并尝试转json，如：a=1&b=2",
       "timestamp：在【光标处/全局】进行【10(13)位时间戳/y-m-d H:i:s(.ms)】格式的转换,若无法转换则会插入当前时间的10位时间戳",
       "url/base64/serialize/utf8：在【光标处/全局】进行url_decode/base64_decode/unserialize/utf8解码，并尝试转json",
       "复制form-data：在【选中处/全局】复制key:value格式的json数据，用于postman等软件的导入",
       "复制压缩：在【选中处/全局】复制去除回车、空格后的压缩数据",
-      "去除转义：在【选中处/全局】去除转义",
-      "光标处去除转义：在【光标处/全局】去除转义",
+      "去除转义：在【光标处/全局】去除转义，光标处可以保持json格式",
+      "选中处去除转义：在【选中处/全局】去除转义",
+      "json去除多级转义：在【选中处/全局】尝试多级去除转义解析json",
       "仅粘贴：在【选中处/全局】粘贴，并不做格式化操作",
       "注释：【全局】指当前标签内所有内容；【光标处】指被光标在双引号包裹的单行字符串中；【选中处】指光标选中的内容",
     ];
@@ -1079,7 +1102,7 @@ const help = () => {
   let content = h('div',
       instructions.map(instruction => h('div', {
         style: {
-          lineHeight// 调整行高为1.5
+          lineHeight// 调整行高
         }
       }, instruction))
   );
@@ -1166,11 +1189,12 @@ const help = () => {
           <a-dropdown>
             <template #overlay>
               <a-menu @click="onRemoveEscape">
-                <a-menu-item key="multi">去除多级转义</a-menu-item>
-                <a-menu-item key="multiAndPoint">光标处去除转义</a-menu-item>
+                <a-menu-item key="jsonAndMulti">json去除多级转义</a-menu-item>
+                <!--                <a-menu-item key="point">光标处去除转义</a-menu-item>-->
+                <a-menu-item key="select">选中处去除转义</a-menu-item>
               </a-menu>
             </template>
-            <a-button @click="format('', {formatOrder:[]})" class="operateBtn">
+            <a-button @click="onRemoveEscape({key:'point'})" class="operateBtn">
               去除转义
               <DownOutlined/>
             </a-button>

@@ -196,8 +196,8 @@ const chooseRecoverDir = () => {
           </a-form-item>
         </a-col>
         <a-col :span="12">
-          <a-form-item tooltip="当数据存在多级别的转义时有效。注：即使关闭也会在无法解析json时尝试进行一次转义的解析"
-                       label="多层转义" :label-col="{ span: 12, offset: 0}"
+          <a-form-item tooltip="当json数据存在多级别的转义时有效，同编辑器下方的【json去除多级转义】功能。注：即使关闭也会在无法解析json时尝试进行一次去除转义的解析"
+                       label="去多层转义" :label-col="{ span: 12, offset: 0}"
                        :wrapper-col="{ span: 0, offset: 0}"
                        class="noBottom">
             <a-checkbox :checked="getConfig('autoFormat').includes(supportAutoType.multiEscape)"
