@@ -10,6 +10,7 @@ export enum supportAutoType {
     archive,
     extractJson,
     unicode,
+    multiEscape,
 }
 
 export type nullable<T> = {

@@ -178,11 +178,12 @@ const chooseRecoverDir = () => {
           </a-form-item>
         </a-col>
         <a-col :span="12">
-          <a-form-item tooltip="滚动内容时，顶部显示固定的范围起始位置。仅monaco编辑器生效" label="粘性预览"
+          <a-form-item tooltip="当数据过长滚动内容时，顶部显示固定的范围起始位置。仅monaco编辑器生效" label="粘性预览"
                        :label-col="{ span: 12, offset: 0}"
                        :wrapper-col="{ span: 0, offset: 0}"
                        class="noBottom">
-            <a-checkbox :checked="getConfig('stickyEnable')"
+            <a-checkbox :disabled="getConfig('render') !== supportEditTemplateType.monaco"
+                        :checked="getConfig('stickyEnable')"
                         @change="setConfigLocal('stickyEnable',$event.target.checked)"/>
           </a-form-item>
         </a-col>
@@ -192,6 +193,15 @@ const chooseRecoverDir = () => {
                        class="noBottom">
             <a-checkbox :checked="getConfig('defaultNewTab')"
                         @change="setConfigLocal('defaultNewTab',$event.target.checked)"/>
+          </a-form-item>
+        </a-col>
+        <a-col :span="12">
+          <a-form-item tooltip="当数据存在多级别的转义时有效。注：即使关闭也会在无法解析json时尝试进行一次转义的解析"
+                       label="多层转义" :label-col="{ span: 12, offset: 0}"
+                       :wrapper-col="{ span: 0, offset: 0}"
+                       class="noBottom">
+            <a-checkbox :checked="getConfig('autoFormat').includes(supportAutoType.multiEscape)"
+                        @change="setAutoFormat(supportAutoType.multiEscape)"/>
           </a-form-item>
         </a-col>
         <a-col :span="12">
@@ -236,6 +246,6 @@ const chooseRecoverDir = () => {
 
 <style scoped>
 .noBottom {
-  margin-bottom: 0;
+  margin-bottom: 2px;
 }
 </style>

@@ -57,8 +57,12 @@ export function timeEncode(str: string) {
     return TimeEncode.encode(str)
 }
 
-export function escapeDecode(json: unknown) {
-    return EscapeEncode.decode(json);
+export function escapeDecode(json: unknown, multi?: boolean) {
+    return EscapeEncode.decode(json, multi);
+}
+
+export function escapeEncode(value: any) {
+    return EscapeEncode.encode(value);
 }
 
 export function formEncode(jsonValues: Record<any, any>) {

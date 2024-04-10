@@ -25,6 +25,7 @@ import {Input, message, Modal} from 'ant-design-vue';
 import {
   base64Decode,
   escapeDecode,
+  escapeEncode,
   extractJson,
   formEncode,
   getParamDecode,
@@ -155,7 +156,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   if (!hasJson) {
     try {
       // const temp = jsonDecode()
-      const tempJson = escapeDecode(dealResult);
+      const tempJson = escapeDecode(dealResult, order.includes(supportAutoType.multiEscape as never));
       if (tempJson && typeof tempJson == 'object' && JSON.stringify(tempJson) !== '[]' && JSON.stringify(tempJson) !== '{}') {
         result = jsonEncode(tempJson, getConfig('tabSize'))
         hasJson = true
@@ -168,7 +169,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
 
   if (!hasJson) {
     try {
-      const tempJson = escapeDecode(unicodeDecode(dealResult));
+      const tempJson = escapeDecode(unicodeDecode(dealResult), order.includes(supportAutoType.multiEscape as never));
       if (tempJson && typeof tempJson == 'object' && JSON.stringify(tempJson) !== '[]' && JSON.stringify(tempJson) !== '{}') {
         result = jsonEncode(tempJson, getConfig('tabSize'))
         hasJson = true
@@ -728,9 +729,9 @@ function initVal() {
 }
 
 
-const format = (text ?: string) => {
+const format = (text ?: string, formatParam?: formatParam) => {
   const formatText = text ? text : getSelectContentData()
-  setValue(formatText)
+  setValue(formatText, formatParam)
   contentRefSetFocus()
 }
 // const copy = () => {
@@ -754,6 +755,25 @@ const formDataCopy = () => {
     windowCopy(archiveText)
   } catch (e) {
     message.error('转码失败');
+  }
+  contentRefSetFocus()
+}
+
+const escapeCopy = () => {
+  const text = getSelectContentData()
+  try {
+    const archiveText = escapeEncode(text)
+    windowCopy(archiveText)
+  } catch (e) {
+  }
+  contentRefSetFocus()
+}
+const escapeAndArchiveCopy = () => {
+  const text = getSelectContentData()
+  try {
+    const archiveText = escapeEncode(jsonArchive(text))
+    windowCopy(archiveText)
+  } catch (e) {
   }
   contentRefSetFocus()
 }
@@ -981,6 +1001,20 @@ function renameShowModel() {
   });
 }
 
+const onCopyHandler = (clickInfo: any) => {
+  switch (clickInfo.key) {
+    case 'form':
+      formDataCopy()
+      break;
+    case 'escape':
+      escapeCopy()
+      break;
+    case 'escapeAndArchive':
+      escapeAndArchiveCopy()
+      break;
+  }
+}
+
 
 const help = () => {
   let instructions;
@@ -1009,6 +1043,7 @@ const help = () => {
       "url/base64/serialize/utf8：在【光标处/全局】进行url_decode/base64_decode/unserialize/utf8解码，并尝试转json",
       "复制form：在【选中处/全局】复制key:value格式的json数据，用于postman等软件的导入",
       "复制压缩：在【选中处/全局】复制去除回车、空格后的压缩数据",
+      "去除转义：在【选中处/全局】去除转义",
       "仅粘贴：在【选中处/全局】粘贴，并不做格式化操作",
       "注释：【全局】指当前标签内所有内容；【光标处】指被光标在双引号包裹的单行字符串中；【选中处】指光标选中的内容",
     ];
@@ -1100,8 +1135,30 @@ const help = () => {
           <a-button class="operateBtn" @click="onUnserializeDecode">serialize</a-button>
           <a-button class="operateBtn" @click="onTimestampDecode">timestamp</a-button>
           <a-button class="operateBtnSmall" @click="onUnicodeDecode">utf8</a-button>
-          <a-button class="operateBtn" @click="formDataCopy">复制form</a-button>
-          <a-button class="operateBtn" @click="archiveCopy">复制压缩</a-button>
+          <a-dropdown>
+            <template #overlay>
+              <a-menu @click="onCopyHandler">
+                <a-menu-item key="escapeAndArchive">复制压缩转义</a-menu-item>
+                <a-menu-item key="escape">复制转义</a-menu-item>
+                <a-menu-item key="form">复制form</a-menu-item>
+              </a-menu>
+            </template>
+            <a-button @click="archiveCopy" class="operateBtn">
+              复制压缩
+              <DownOutlined/>
+            </a-button>
+          </a-dropdown>
+          <a-dropdown>
+            <template #overlay>
+              <a-menu @click="format('', {formatOrder:[supportAutoType.multiEscape]})">
+                <a-menu-item key="form">去除多级转义</a-menu-item>
+              </a-menu>
+            </template>
+            <a-button @click="format('', {formatOrder:[]})" class="operateBtn">
+              去除转义
+              <DownOutlined/>
+            </a-button>
+          </a-dropdown>
           <a-button class="operateBtnSmall" @click="pasteOnly">仅粘贴</a-button>
         </div>
       </div>
