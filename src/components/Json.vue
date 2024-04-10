@@ -1014,11 +1014,37 @@ const onCopyHandler = (clickInfo: any) => {
       break;
   }
 }
+const onRemoveEscape = (clickInfo: any) => {
+  switch (clickInfo.key) {
+    case 'multi':
+      format('', {formatOrder: [supportAutoType.multiEscape]})
+      break;
+    case 'multiAndPoint':
+      let {contentInfo, selectInfo} = getContentCursorOrAll(ContentSelectType.line_quotes);
+      const parseText = selectInfo.matchText;
+      if (!parseText) {
+        contentRefSetFocus()
+        return
+      }
+
+      try {
+        const newData = parseText.replace(/\\\\/g, "\\").replace(/\\"/g, '"')
+        if (newData == parseText) {
+          contentRefSetFocus()
+          return
+        }
+        replaceNewContent(contentInfo, selectInfo, newData)
+      } catch (e) {
+      }
+      contentRefSetFocus()
+      break;
+  }
+}
 
 
 const help = () => {
   let instructions;
-  let lineHeight = '1.4';
+  let lineHeight = '1.7';
   if (settingTabActiveKey.value == '1') {
     instructions = [
       "可以将某一个时刻的所有自建标签(除temp标签)归档",
@@ -1032,7 +1058,7 @@ const help = () => {
       "归档核心数据存储在本地，故无法使用utools的数据同步",
       "存储路径为：我的文档/json_xxxxxx ，请勿修改其中数据",
     ];
-    lineHeight = '1'
+    lineHeight = '2'
   } else {
     instructions = [
       "默认行为：粘贴自动格式化json，支持unicode字符(如：\\x22、\\u0031)的转码自动格式化 快捷键：ctrl + v",
@@ -1041,16 +1067,17 @@ const help = () => {
       "get：在【光标处/全局】解析get参数，并尝试转json，如：a=1&b=2",
       "timestamp：在【光标处/全局】进行【10(13)位时间戳/y-m-d H:i:s(.ms)】格式的转换,若无法转换则会插入当前时间的10位时间戳",
       "url/base64/serialize/utf8：在【光标处/全局】进行url_decode/base64_decode/unserialize/utf8解码，并尝试转json",
-      "复制form：在【选中处/全局】复制key:value格式的json数据，用于postman等软件的导入",
+      "复制form-data：在【选中处/全局】复制key:value格式的json数据，用于postman等软件的导入",
       "复制压缩：在【选中处/全局】复制去除回车、空格后的压缩数据",
       "去除转义：在【选中处/全局】去除转义",
+      "光标处去除转义：在【光标处/全局】去除转义",
       "仅粘贴：在【选中处/全局】粘贴，并不做格式化操作",
       "注释：【全局】指当前标签内所有内容；【光标处】指被光标在双引号包裹的单行字符串中；【选中处】指光标选中的内容",
     ];
   }
 
   let content = h('div',
-      instructions.map(instruction => h('p', {
+      instructions.map(instruction => h('div', {
         style: {
           lineHeight// 调整行高为1.5
         }
@@ -1135,23 +1162,12 @@ const help = () => {
           <a-button class="operateBtn" @click="onUnserializeDecode">serialize</a-button>
           <a-button class="operateBtn" @click="onTimestampDecode">timestamp</a-button>
           <a-button class="operateBtnSmall" @click="onUnicodeDecode">utf8</a-button>
+
           <a-dropdown>
             <template #overlay>
-              <a-menu @click="onCopyHandler">
-                <a-menu-item key="escapeAndArchive">复制压缩转义</a-menu-item>
-                <a-menu-item key="escape">复制转义</a-menu-item>
-                <a-menu-item key="form">复制form</a-menu-item>
-              </a-menu>
-            </template>
-            <a-button @click="archiveCopy" class="operateBtn">
-              复制压缩
-              <DownOutlined/>
-            </a-button>
-          </a-dropdown>
-          <a-dropdown>
-            <template #overlay>
-              <a-menu @click="format('', {formatOrder:[supportAutoType.multiEscape]})">
-                <a-menu-item key="form">去除多级转义</a-menu-item>
+              <a-menu @click="onRemoveEscape">
+                <a-menu-item key="multi">去除多级转义</a-menu-item>
+                <a-menu-item key="multiAndPoint">光标处去除转义</a-menu-item>
               </a-menu>
             </template>
             <a-button @click="format('', {formatOrder:[]})" class="operateBtn">
@@ -1159,6 +1175,21 @@ const help = () => {
               <DownOutlined/>
             </a-button>
           </a-dropdown>
+
+          <a-dropdown>
+            <template #overlay>
+              <a-menu @click="onCopyHandler">
+                <a-menu-item key="form">复制form-data</a-menu-item>
+                <a-menu-item key="escape">复制转义</a-menu-item>
+                <a-menu-item key="escapeAndArchive">复制压缩转义</a-menu-item>
+              </a-menu>
+            </template>
+            <a-button @click="archiveCopy" class="operateBtn">
+              复制压缩
+              <DownOutlined/>
+            </a-button>
+          </a-dropdown>
+
           <a-button class="operateBtnSmall" @click="pasteOnly">仅粘贴</a-button>
         </div>
       </div>
