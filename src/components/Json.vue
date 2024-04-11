@@ -109,7 +109,8 @@ windowPluginEnter(({payload, type, code}) => {
 })
 
 const getFormatData = (str: string, formatParam?: formatParam) => {
-  const order = formatParam?.formatOrder ?? getConfig('autoFormat')
+  const config = getConfig('autoFormat');
+  const formatOrder = formatParam?.formatOrder ?? config
   const format = formatParam?.formatOpen ?? true;
   if (!format) {
     return str
@@ -117,7 +118,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   let result = str
   let hasJson = false
   try {
-    if (!hasJson && order.includes(supportAutoType.get_param as never)) {
+    if (!hasJson && formatOrder.includes(supportAutoType.get_param as never)) {
       const paramJson = getParamDecode(str)
       if (typeof paramJson === 'object' && jsonEncode(paramJson) != '{}') {
         result = jsonEncode(paramJson, getConfig('tabSize'))
@@ -129,7 +130,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   }
 
 
-  if (!hasJson && order.includes(supportAutoType.unserialize as never)) {
+  if (!hasJson && formatOrder.includes(supportAutoType.unserialize as never)) {
     const paramJson = serializeDecode(str)
     if (typeof paramJson === 'object' && jsonEncode(paramJson) != '{}') {
       result = jsonEncode(paramJson, getConfig('tabSize'))
@@ -140,14 +141,14 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
 
   let dealResult = result;
   try {
-    if (!hasJson && order.includes(supportAutoType.archive as never)) {
+    if (!hasJson && formatOrder.includes(supportAutoType.archive as never)) {
       dealResult = jsonArchive(dealResult)
     }
   } catch (e) {
   }
 
   try {
-    if (!hasJson && order.includes(supportAutoType.extractJson as never)) {
+    if (!hasJson && formatOrder.includes(supportAutoType.extractJson as never)) {
       dealResult = extractJson(dealResult)
     }
   } catch (e) {
@@ -156,7 +157,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   if (!hasJson) {
     try {
       // const temp = jsonDecode()
-      const tempJson = escapeDecode(dealResult, order.includes(supportAutoType.multiEscape as never));
+      const tempJson = escapeDecode(dealResult, config.includes(supportAutoType.multiEscape as never));
       if (tempJson && typeof tempJson == 'object' && JSON.stringify(tempJson) !== '[]' && JSON.stringify(tempJson) !== '{}') {
         result = jsonEncode(tempJson, getConfig('tabSize'))
         hasJson = true
@@ -169,7 +170,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
 
   if (!hasJson) {
     try {
-      const tempJson = escapeDecode(unicodeDecode(dealResult), order.includes(supportAutoType.multiEscape as never));
+      const tempJson = escapeDecode(unicodeDecode(dealResult), config.includes(supportAutoType.multiEscape as never));
       if (tempJson && typeof tempJson == 'object' && JSON.stringify(tempJson) !== '[]' && JSON.stringify(tempJson) !== '{}') {
         result = jsonEncode(tempJson, getConfig('tabSize'))
         hasJson = true
@@ -180,7 +181,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   }
 
   try {
-    if (!hasJson && order.includes(supportAutoType.unicode as never)) {
+    if (!hasJson && formatOrder.includes(supportAutoType.unicode as never)) {
       result = unicodeDecode(result)
     }
   } catch (e) {
