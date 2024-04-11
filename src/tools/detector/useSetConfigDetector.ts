@@ -18,12 +18,12 @@ const config: systemConfigInterface = systemConfig ? systemConfig : {
     tabSize: 4,
     printMargin: false,
     useWrap: false,
-    autoFormat: [supportAutoType.extractJson, supportAutoType.archive],
+    autoFormat: [supportAutoType.extractJson, supportAutoType.archive, supportAutoType.multiEscape],
     render: supportEditTemplateType.monaco, // brace  moncaco
     defaultNewTab: true,
     doubleShiftKeyDown: false,
     saveData: true,
-    stickyEnable: false,
+    stickyEnable: true,
 };
 const contentConfig = reactive<systemConfigInterface>(config)
 const callbackList: configListenerInterface[] = [];
