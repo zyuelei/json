@@ -154,10 +154,11 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
   } catch (e) {
   }
 
+  const multiEscape = config.includes(supportAutoType.multiEscape as never) || formatOrder.includes(supportAutoType.multiEscape as never)
   if (!hasJson) {
     try {
       // const temp = jsonDecode()
-      const tempJson = escapeDecode(dealResult, config.includes(supportAutoType.multiEscape as never));
+      const tempJson = escapeDecode(dealResult, multiEscape);
       if (tempJson && typeof tempJson == 'object' && JSON.stringify(tempJson) !== '[]' && JSON.stringify(tempJson) !== '{}') {
         result = jsonEncode(tempJson, getConfig('tabSize'))
         hasJson = true
@@ -170,7 +171,7 @@ const getFormatData = (str: string, formatParam?: formatParam) => {
 
   if (!hasJson) {
     try {
-      const tempJson = escapeDecode(unicodeDecode(dealResult), config.includes(supportAutoType.multiEscape as never));
+      const tempJson = escapeDecode(unicodeDecode(dealResult), multiEscape);
       if (tempJson && typeof tempJson == 'object' && JSON.stringify(tempJson) !== '[]' && JSON.stringify(tempJson) !== '{}') {
         result = jsonEncode(tempJson, getConfig('tabSize'))
         hasJson = true
